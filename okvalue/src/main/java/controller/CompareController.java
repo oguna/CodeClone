@@ -175,6 +175,7 @@ public class CompareController {
 			}
 			pw.close();
 			pw2.close();
+			System.out.println("");
 		} catch (FileNotFoundException e) {
 			System.out.println(e);
 		} catch (IOException e) {
