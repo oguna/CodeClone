@@ -82,4 +82,103 @@ public class CompareController {
 			System.out.println(e);
 		}
 	}
+
+	public void execute(LinkedList<Clone> decompileClones) {
+		Clone dclone = new Clone();
+		Clone oclone = new Clone();
+		int flag = 0;
+		try {
+			File writefile_common = new File(
+					"C:/cygwin/home/y-yusuke/simian/bin/Result/result(common).txt");
+			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(
+					writefile_common)));
+			File writefile_notcommon = new File(
+					"C:/cygwin/home/y-yusuke/simian/bin/Result/result(notcommon).txt");
+			PrintWriter pw2 = new PrintWriter(new BufferedWriter(new FileWriter(
+					writefile_notcommon)));
+
+			for (int i = 0; i < decompileClones.size(); i++) {
+				dclone = decompileClones.get(i);
+				for (int j = 0; j < originClones.size(); j++) {
+					oclone = originClones.get(j);
+					if (dclone.getLocation().equals(oclone.getLocation())) {
+						if(dclone.getStart() >= oclone.getStart() && dclone.getStart() <= oclone.getEnd()){
+							pw.println(dclone.getId());
+							pw.println(dclone.getLocation());
+							pw.println(dclone.getFilename());
+							pw.println(dclone.getStart());
+							pw.println(dclone.getEnd());
+							pw.println(" ");
+							pw.println(oclone.getId());
+							pw.println(oclone.getLocation());
+							pw.println(oclone.getFilename());
+							pw.println(oclone.getStart());
+							pw.println(oclone.getEnd());
+							pw.println("----------------------------------------------");
+							flag = 1;
+							break;
+						}else if(dclone.getEnd() >= oclone.getStart() && dclone.getEnd() <= oclone.getEnd()){
+							pw.println(dclone.getId());
+							pw.println(dclone.getLocation());
+							pw.println(dclone.getFilename());
+							pw.println(dclone.getStart());
+							pw.println(dclone.getEnd());
+							pw.println(" ");
+							pw.println(oclone.getId());
+							pw.println(oclone.getLocation());
+							pw.println(oclone.getFilename());
+							pw.println(oclone.getStart());
+							pw.println(oclone.getEnd());
+							pw.println("----------------------------------------------");
+							break;
+						}else if(dclone.getStart() <= oclone.getStart() && dclone.getEnd() >= oclone.getEnd()){
+							pw.println(dclone.getId());
+							pw.println(dclone.getLocation());
+							pw.println(dclone.getFilename());
+							pw.println(dclone.getStart());
+							pw.println(dclone.getEnd());
+							pw.println(" ");
+							pw.println(oclone.getId());
+							pw.println(oclone.getLocation());
+							pw.println(oclone.getFilename());
+							pw.println(oclone.getStart());
+							pw.println(oclone.getEnd());
+							pw.println("----------------------------------------------");
+							flag = 1;
+							break;
+						}else if(dclone.getStart() >= oclone.getStart() && dclone.getEnd() <= oclone.getEnd()){
+							pw.println(dclone.getId());
+							pw.println(dclone.getLocation());
+							pw.println(dclone.getFilename());
+							pw.println(dclone.getStart());
+							pw.println(dclone.getEnd());
+							pw.println(" ");
+							pw.println(oclone.getId());
+							pw.println(oclone.getLocation());
+							pw.println(oclone.getFilename());
+							pw.println(oclone.getStart());
+							pw.println(oclone.getEnd());
+							pw.println("----------------------------------------------");
+							flag = 1;
+							break;
+						}
+					}
+				}
+				if(flag == 0){
+					pw2.println(dclone.getId());
+					pw2.println(dclone.getLocation());
+					pw2.println(dclone.getFilename());
+					pw2.println(dclone.getStart());
+					pw2.println(dclone.getEnd());
+					pw2.println(" ");
+				}else flag = 0;
+			}
+			pw.close();
+			pw2.close();
+		} catch (FileNotFoundException e) {
+			System.out.println(e);
+		} catch (IOException e) {
+			System.out.println(e);
+		}
+	}
 }

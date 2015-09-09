@@ -16,5 +16,6 @@ public class App {
 
 		CompareController cControl = new CompareController();
 		cControl.split();
+		cControl.execute(Clones);
 	}
 }
