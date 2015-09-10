@@ -13,35 +13,39 @@ import java.util.LinkedList;
 
 import model.Clone;
 
+/**
+ * @author y-yusuke
+ *
+ */
+
 public class DecompileController {
 
-	Clone clone = new Clone();
-	LinkedList<Clone> decompileClones = new LinkedList<Clone>();
+	private int id;
+	private String location;
+	private String filename;
+	private int start;
+	private int end;
 
 	public DecompileController() {
 
 	}
 
-	public void split() {
-
-		int id = 1;
-		String location;
-		String filename;
-		int start;
-		int end;
+	public LinkedList<Clone> split() {
+		id = 1;
 		String linestr;
-		String[] clonestr;
-		String[] javafilelocation;
+		String[] cloneInfo;
+		String[] javaFile;
+		Clone dclone = new Clone();
+		LinkedList<Clone> decompileClones = new LinkedList<Clone>();
 
 		try {
 			File readfile = new File(
-					"C:/cygwin/home/y-yusuke/simian/bin/Result/result(decompile).txt");
+					"C:/cygwin/home/y-yusuke/simian/bin/Result/decompile/result(decompile).txt");
 			BufferedReader br = new BufferedReader(new FileReader(readfile));
 
 			File writefile = new File(
-					"C:/cygwin/home/y-yusuke/simian/bin/Result/result(decompile_parse).txt");
-			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(
-					writefile)));
+					"C:/cygwin/home/y-yusuke/simian/bin/Result/decompile/result(decompile_parse).txt");
+			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(writefile)));
 
 			for (int i = 0; i < 4; i++)
 				br.readLine();
@@ -49,33 +53,38 @@ public class DecompileController {
 			linestr = br.readLine();
 			while (linestr.startsWith("Found")) {
 				linestr = br.readLine();
-				if (linestr.startsWith("Processed"))
-					break;
+				if (linestr.startsWith("Processed")) break;
 				while (true) {
-					clonestr = linestr.split(":", 0);
-					location = (clonestr[0] + ":" + clonestr[1]).trim()
-							.replace("\\", "/");
-					javafilelocation = location.split("/", 0);
-					filename = javafilelocation[javafilelocation.length - 1];
-					start = Integer.parseInt(clonestr[2]);
-					end = Integer.parseInt(clonestr[4]);
-					clone.setId(id);
-					clone.setLocation(location);
-					clone.setFilename(filename);
-					clone.setStart(start);
-					clone.setEnd(end);
-					decompileClones.add(clone);
-					clone = new Clone();
+					//解析
+					cloneInfo = linestr.split(":", 0);
+					location = (cloneInfo[0] + ":" + cloneInfo[1]).trim().replace("\\", "/");
+					javaFile = location.split("/", 0);
+					filename = javaFile[javaFile.length - 1];
+					start = Integer.parseInt(cloneInfo[2]);
+					end = Integer.parseInt(cloneInfo[4]);
+
+					//リスト格納
+					dclone.setId(id);
+					dclone.setLocation(location);
+					dclone.setFilename(filename);
+					dclone.setStart(start);
+					dclone.setEnd(end);
+					decompileClones.add(dclone);
+					dclone = new Clone();
+
+					//ファイル書き込み
 					pw.println(id);
 					pw.println(location);
 					pw.println(filename);
 					pw.println(start);
 					pw.println(end);
+
 					linestr = br.readLine();
-					if (linestr.startsWith("Found"))
-						break;
+					if (linestr.startsWith("Found")) break;
 				}
 				id++;
+				pw.println("********************************************************************");
+				pw.println("********************************************************************");
 			}
 			br.close();
 			pw.close();
@@ -84,41 +93,42 @@ public class DecompileController {
 		} catch (IOException e) {
 			System.out.println(e);
 		}
+		return decompileClones;
 	}
 
-	public LinkedList<Clone> conversion() {
-		LinkedList<Clone> conversionClones = new LinkedList<Clone>();
-		LinkedList<Integer> range = new LinkedList<Integer>();
-		int id = 1;
-		String location;
-		String filename;
-		int start;
-		int end;
+	public LinkedList<Clone> conversion(LinkedList<Clone> decompileClones) {
+		id = 1;
 		int lineNumber;
 		String linestr;
 		String[] comment;
-		clone = new Clone();
+		Clone dclone = new Clone();
+		Clone cclone = new Clone();
+		LinkedList<Clone> conversionClones = new LinkedList<Clone>();
+		LinkedList<Integer> range = new LinkedList<Integer>();
 
 		try {
 			File writefile = new File(
-					"C:/cygwin/home/y-yusuke/simian/bin/Result/result(decompile_conversion).txt");
-			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(
-					writefile)));
-			while ((clone = decompileClones.poll()) != null) {
-				id = clone.getId();
-				location = clone.getLocation();
-				filename = clone.getFilename();
-				start = clone.getStart();
-				end = clone.getEnd();
+					"C:/cygwin/home/y-yusuke/simian/bin/Result/decompile/result(decompile_conversion).txt");
+			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(writefile)));
+
+			for (int i = 0; i < decompileClones.size(); i++) {
+				dclone = decompileClones.get(i);
+				id = dclone.getId();
+				location = dclone.getLocation();
+				filename = dclone.getFilename();
+				start = dclone.getStart();
+				end = dclone.getEnd();
 
 				try {
 					File readfile = new File(location);
-					BufferedReader br = new BufferedReader(new FileReader(
-							readfile));
+					BufferedReader br = new BufferedReader(new FileReader(readfile));
 
-					for (int i = 1; i < start; i++)
+					location = location.replace("src2", "src/main");
+
+					//コードクローン範囲の対応付け
+					for (int j = 1; j < start; j++)
 						linestr = br.readLine();
-					for (int i = 0; i < end - start + 1; i++) {
+					for (int j = 0; j < end - start + 1; j++) {
 						linestr = br.readLine();
 						if (linestr.startsWith("/*")) {
 							comment = linestr.split("\\*", 0);
@@ -126,7 +136,7 @@ public class DecompileController {
 							range.add(lineNumber);
 						}
 					}
-					location = location.replace("src2", "src/main");
+
 					if (range.isEmpty()) {
 						start = 0;
 						end = 0;
@@ -134,19 +144,26 @@ public class DecompileController {
 						start = Collections.min(range);
 						end = Collections.max(range);
 					}
-					clone.setId(id);
-					clone.setLocation(location);
-					clone.setFilename(filename);
-					clone.setStart(start);
-					clone.setEnd(end);
-					conversionClones.add(clone);
+
+					//リスト格納
+					cclone.setId(id);
+					cclone.setLocation(location);
+					cclone.setFilename(filename);
+					cclone.setStart(start);
+					cclone.setEnd(end);
+					conversionClones.add(cclone);
+					cclone = new Clone();
+
+					//ファイル書き込み
 					pw.println(id);
 					pw.println(location);
 					pw.println(filename);
 					pw.println(start);
 					pw.println(end);
+					pw.println("********************************************************************");
+					pw.println("********************************************************************");
+
 					range.clear();
-					clone = new Clone();
 					br.close();
 				} catch (FileNotFoundException e) {
 					System.out.println(e);

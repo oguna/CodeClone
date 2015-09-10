@@ -1,21 +1,31 @@
 package CodeClone.okvalue;
 
+/**
+ * @author y-yusuke
+ *
+ */
+
 import java.util.LinkedList;
 
 import model.Clone;
 import controller.CompareController;
 import controller.DecompileController;
+import controller.OriginController;
 
 public class App {
 	public static void main(String[] args) {
-		LinkedList<Clone> Clones = new LinkedList<Clone>();
+		LinkedList<Clone> originClones = new LinkedList<Clone>();
+		LinkedList<Clone> decompileClones = new LinkedList<Clone>();
+		LinkedList<Clone> conversionClones = new LinkedList<Clone>();
 
+		OriginController oControl = new OriginController();
 		DecompileController dControl = new DecompileController();
-		dControl.split();
-		Clones = dControl.conversion();
+
+		originClones = oControl.split();
+		decompileClones = dControl.split();
+		conversionClones = dControl.conversion(decompileClones);
 
 		CompareController cControl = new CompareController();
-		cControl.split();
-		cControl.execute(Clones);
+		cControl.execute(originClones,decompileClones,conversionClones);
 	}
 }

@@ -1,5 +1,10 @@
 package model;
 
+/**
+ * @author y-yusuke
+ *
+ */
+
 public class Clone {
 
 	private int id;
