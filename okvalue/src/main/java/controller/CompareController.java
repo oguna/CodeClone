@@ -24,7 +24,13 @@ public class CompareController {
 		Clone oclone = new Clone();
 		Clone dclone = new Clone();
 		Clone cclone = new Clone();
-		int flag = 0;
+		double clines;
+		double rlines;
+		double overlaplines;
+		double ccontained;
+		double rcontained;
+		double max;
+		boolean flag = false;
 		try {
 			File writefile_common = new File(
 					"C:/cygwin/home/y-yusuke/simian/bin/Result/result(common).txt");
@@ -42,13 +48,24 @@ public class CompareController {
 
 					if (cclone.getLocation().equals(oclone.getLocation())) {
 						//共通クローンの判定
-						if(cclone.getStart() >= oclone.getStart() && cclone.getStart() <= oclone.getEnd()) flag = 1;
-						else if(cclone.getEnd() >= oclone.getStart() && cclone.getEnd() <= oclone.getEnd()) flag =1;
-						else if(cclone.getStart() <= oclone.getStart() && cclone.getEnd() >= oclone.getEnd()) flag =1;
-						else if(cclone.getStart() >= oclone.getStart() && cclone.getEnd() <= oclone.getEnd()) flag = 1;
+						clines = oclone.getEnd() - oclone.getStart() +1;
+						rlines = cclone.getEnd() - cclone.getStart() +1;
+						overlaplines = 0;
+						for(int p = oclone.getStart() ; p <= oclone.getEnd() ; p++){
+							for(int q = cclone.getStart() ; q <= cclone.getEnd() ; q++){
+								if(p == q) {
+									overlaplines++;
+									break;
+								}
+							}
+						}
+						ccontained = overlaplines / clines;
+						rcontained = overlaplines / rlines;
+						if(rcontained < ccontained) max = ccontained;
+						else max = rcontained;
 
 						//共通クローンを出力
-						if(flag == 1){
+						if(max >= 0.7){
 							pw.println("-------------origin-------------");
 							pw.println(oclone.getId());
 							pw.println(oclone.getLocation());
@@ -69,12 +86,14 @@ public class CompareController {
 							pw.println(cclone.getEnd());
 							pw.println("********************************************************************");
 							pw.println("********************************************************************");
+							flag = true;
 							break;
 						}
 					}
 				}
+
 				//非共通クローンを出力
-				if(flag == 0){
+				if(flag == false){
 					pw2.println("-----------decompile-----------");
 					pw2.println(dclone.getId());
 					pw2.println(dclone.getLocation());
@@ -89,8 +108,7 @@ public class CompareController {
 					pw2.println(cclone.getEnd());
 					pw2.println("********************************************************************");
 					pw2.println("********************************************************************");
-				}else flag = 0;
-
+				}flag = false;
 			}
 			pw.close();
 			pw2.close();
