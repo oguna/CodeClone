@@ -27,5 +27,6 @@ public class App {
 
 		CompareController cControl = new CompareController();
 		cControl.execute(originClones,decompileClones,conversionClones);
+		cControl.divide(originClones,decompileClones,conversionClones);
 	}
 }
