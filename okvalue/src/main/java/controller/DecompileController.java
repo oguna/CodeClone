@@ -40,11 +40,11 @@ public class DecompileController {
 
 		try {
 			File readfile = new File(
-					"C:/cygwin/home/y-yusuke/simian/bin/Result/decompile/result(decompile).txt");
+					"C:/cygwin64/home/y-yusuke/simian/bin/Result/decompile/result(decompile).txt");
 			BufferedReader br = new BufferedReader(new FileReader(readfile));
 
 			File writefile = new File(
-					"C:/cygwin/home/y-yusuke/simian/bin/Result/decompile/result(decompile_parse).txt");
+					"C:/cygwin64/home/y-yusuke/simian/bin/Result/decompile/result(decompile_parse).txt");
 			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(writefile)));
 
 			for (int i = 0; i < 4; i++)
@@ -74,7 +74,7 @@ public class DecompileController {
 
 					//ファイル書き込み
 					pw.println(id);
-					pw.println(location);
+					pw.println("file:///" + location);
 					pw.println(filename);
 					pw.println(start);
 					pw.println(end);
@@ -108,7 +108,7 @@ public class DecompileController {
 
 		try {
 			File writefile = new File(
-					"C:/cygwin/home/y-yusuke/simian/bin/Result/decompile/result(decompile_conversion).txt");
+					"C:/cygwin64/home/y-yusuke/simian/bin/Result/decompile/result(decompile_conversion).txt");
 			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(writefile)));
 
 			for (int i = 0; i < decompileClones.size(); i++) {
@@ -156,7 +156,7 @@ public class DecompileController {
 
 					//ファイル書き込み
 					pw.println(id);
-					pw.println(location);
+					pw.println("file:///" + location);
 					pw.println(filename);
 					pw.println(start);
 					pw.println(end);

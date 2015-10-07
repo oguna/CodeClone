@@ -32,11 +32,11 @@ public class OriginController {
 
 		try {
 			File readfile = new File(
-					"C:/cygwin/home/y-yusuke/simian/bin/Result/origin/result.txt");
+					"C:/cygwin64/home/y-yusuke/simian/bin/Result/origin/result.txt");
 			BufferedReader br = new BufferedReader(new FileReader(readfile));
 
 			File writefile = new File(
-					"C:/cygwin/home/y-yusuke/simian/bin/Result/origin/result(parse).txt");
+					"C:/cygwin64/home/y-yusuke/simian/bin/Result/origin/result(parse).txt");
 			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(writefile)));
 
 			for (int i = 0; i < 4; i++)
@@ -66,7 +66,7 @@ public class OriginController {
 
 					//ファイル書き込み
 					pw.println(id);
-					pw.println(location);
+					pw.println("file:///" + location);
 					pw.println(filename);
 					pw.println(start);
 					pw.println(end);

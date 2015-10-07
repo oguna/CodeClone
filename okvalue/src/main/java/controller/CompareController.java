@@ -45,10 +45,10 @@ public class CompareController {
 
 		try {
 			File writefile_common = new File(
-					"C:/cygwin/home/y-yusuke/simian/bin/Result/result(common).txt");
+					"C:/cygwin64/home/y-yusuke/simian/bin/Result/result(common).txt");
 			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(writefile_common)));
 			File writefile_notcommon = new File(
-					"C:/cygwin/home/y-yusuke/simian/bin/Result/result(notcommon).txt");
+					"C:/cygwin64/home/y-yusuke/simian/bin/Result/result(notcommon).txt");
 			PrintWriter pw2 = new PrintWriter(new BufferedWriter(new FileWriter(writefile_notcommon)));
 
 			for (int i = 0; i < conversionClones.size(); i++) {
@@ -110,19 +110,19 @@ public class CompareController {
 
 					pw.println("-------------origin-------------");
 					pw.println(oclone.getId());
-					pw.println(oclone.getLocation());
+					pw.println("file:///" + oclone.getLocation());
 					pw.println(oclone.getFilename());
 					pw.println(oclone.getStart());
 					pw.println(oclone.getEnd());
 					pw.println("-----------decompile-----------");
 					pw.println(dclone.getId());
-					pw.println(dclone.getLocation());
+					pw.println("file:///" + dclone.getLocation());
 					pw.println(dclone.getFilename());
 					pw.println(dclone.getStart());
 					pw.println(dclone.getEnd());
 					pw.println("-----------conversion-----------");
 					pw.println(cclone.getId());
-					pw.println(cclone.getLocation());
+					pw.println("file:///" + cclone.getLocation());
 					pw.println(cclone.getFilename());
 					pw.println(cclone.getStart());
 					pw.println(cclone.getEnd());
@@ -135,13 +135,13 @@ public class CompareController {
 					//非共通クローンを出力
 					pw2.println("-----------decompile-----------");
 					pw2.println(dclone.getId());
-					pw2.println(dclone.getLocation());
+					pw2.println("file:///" + dclone.getLocation());
 					pw2.println(dclone.getFilename());
 					pw2.println(dclone.getStart());
 					pw2.println(dclone.getEnd());
 					pw2.println("-----------conversion-----------");
 					pw2.println(cclone.getId());
-					pw2.println(cclone.getLocation());
+					pw2.println("file:///" + cclone.getLocation());
 					pw2.println(cclone.getFilename());
 					pw2.println(cclone.getStart());
 					pw2.println(cclone.getEnd());
@@ -169,13 +169,13 @@ public class CompareController {
 
 		try {
 			File writefile_newclone = new File(
-					"C:/cygwin/home/y-yusuke/simian/bin/Result/result(newclone).txt");
+					"C:/cygwin64/home/y-yusuke/simian/bin/Result/result(newclone).txt");
 			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(writefile_newclone)));
 			File writefile_outcast = new File(
-					"C:/cygwin/home/y-yusuke/simian/bin/Result/result(outcast).txt");
+					"C:/cygwin64/home/y-yusuke/simian/bin/Result/result(outcast).txt");
 			PrintWriter pw2 = new PrintWriter(new BufferedWriter(new FileWriter(writefile_outcast)));
 			File writefile_reject = new File(
-					"C:/cygwin/home/y-yusuke/simian/bin/Result/result(reject).txt");
+					"C:/cygwin64/home/y-yusuke/simian/bin/Result/result(reject).txt");
 			PrintWriter pw3 = new PrintWriter(new BufferedWriter(new FileWriter(writefile_reject)));
 
 			for(int i = 0 ; i < dnotcommon.size() ; i++){
@@ -190,13 +190,13 @@ public class CompareController {
 				if(flag == false){
 					pw.println("-----------decompile-----------");
 					pw.println(dclone.getId());
-					pw.println(dclone.getLocation());
+					pw.println("file:///" + dclone.getLocation());
 					pw.println(dclone.getFilename());
 					pw.println(dclone.getStart());
 					pw.println(dclone.getEnd());
 					pw.println("-----------conversion-----------");
 					pw.println(cclone.getId());
-					pw.println(cclone.getLocation());
+					pw.println("file:///" + cclone.getLocation());
 					pw.println(cclone.getFilename());
 					pw.println(cclone.getStart());
 					pw.println(cclone.getEnd());
@@ -205,13 +205,13 @@ public class CompareController {
 				}else{
 					pw2.println("-----------decompile-----------");
 					pw2.println(dclone.getId());
-					pw2.println(dclone.getLocation());
+					pw2.println("file:///" + dclone.getLocation());
 					pw2.println(dclone.getFilename());
 					pw2.println(dclone.getStart());
 					pw2.println(dclone.getEnd());
 					pw2.println("-----------conversion-----------");
 					pw2.println(cclone.getId());
-					pw2.println(cclone.getLocation());
+					pw2.println("file:///" + cclone.getLocation());
 					pw2.println(cclone.getFilename());
 					pw2.println(cclone.getStart());
 					pw2.println(cclone.getEnd());
@@ -236,7 +236,7 @@ public class CompareController {
 					oclone = originClones.get(i);
 					pw3.println("-------------origin-------------");
 					pw3.println(oclone.getId());
-					pw3.println(oclone.getLocation());
+					pw3.println("file:///" + oclone.getLocation());
 					pw3.println(oclone.getFilename());
 					pw3.println(oclone.getStart());
 					pw3.println(oclone.getEnd());
