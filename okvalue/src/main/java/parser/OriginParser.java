@@ -1,4 +1,4 @@
-package controller;
+package parser;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -12,7 +12,7 @@ import java.util.LinkedList;
 
 import model.Clone;
 
-public class OriginController {
+public class OriginParser {
 	private int id;
 	private String location;
 	private String filename;
@@ -21,7 +21,7 @@ public class OriginController {
 	Clone oclone = new Clone();
 	LinkedList<Clone> originClones = new LinkedList<Clone>();
 
-	public OriginController() {
+	public OriginParser() {
 	}
 
 	public LinkedList<Clone> split() {
@@ -39,8 +39,7 @@ public class OriginController {
 					"C:/cygwin64/home/y-yusuke/simian/bin/Result/origin/result(parse).txt");
 			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(writefile)));
 
-			for (int i = 0; i < 4; i++)
-				br.readLine();
+			for (int i = 0; i < 4; i++) br.readLine();
 
 			linestr = br.readLine();
 			while (linestr.startsWith("Found")) {

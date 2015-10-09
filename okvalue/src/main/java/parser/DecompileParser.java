@@ -1,4 +1,4 @@
-package controller;
+package parser;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -18,7 +18,7 @@ import model.Clone;
  *
  */
 
-public class DecompileController {
+public class DecompileParser {
 
 	private int id;
 	private String location;
@@ -26,7 +26,7 @@ public class DecompileController {
 	private int start;
 	private int end;
 
-	public DecompileController() {
+	public DecompileParser() {
 
 	}
 

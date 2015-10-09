@@ -1,4 +1,4 @@
-package controller;
+package parser;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -16,7 +16,7 @@ import model.Compare;
  *
  */
 
-public class CompareController {
+public class CompareParser {
 
 	LinkedList<Clone> ocommon = new LinkedList<Clone>();
 	LinkedList<Clone> dcommon = new LinkedList<Clone>();
@@ -24,8 +24,13 @@ public class CompareController {
 	LinkedList<Clone> onotcommon = new LinkedList<Clone>();
 	LinkedList<Clone> dnotcommon = new LinkedList<Clone>();
 	LinkedList<Clone> cnotcommon = new LinkedList<Clone>();
+	LinkedList<Clone> dnewClones = new LinkedList<Clone>();
+	LinkedList<Clone> cnewClones = new LinkedList<Clone>();
+	LinkedList<Clone> doutClones = new LinkedList<Clone>();
+	LinkedList<Clone> coutClones = new LinkedList<Clone>();
+	LinkedList<Clone> rejectClones = new LinkedList<Clone>();
 
-	public CompareController() {
+	public CompareParser() {
 	}
 
 	public void execute(LinkedList<Clone> originClones,LinkedList<Clone> decompileClones,LinkedList<Clone> conversionClones) {
@@ -178,6 +183,7 @@ public class CompareController {
 					"C:/cygwin64/home/y-yusuke/simian/bin/Result/result(reject).txt");
 			PrintWriter pw3 = new PrintWriter(new BufferedWriter(new FileWriter(writefile_reject)));
 
+			//newクローンの仕分け
 			for(int i = 0 ; i < dnotcommon.size() ; i++){
 				for(int j = 0 ; j < dcommon.size() ; j++){
 					if(dnotcommon.get(i).getId() == dcommon.get(j).getId()){
@@ -202,6 +208,8 @@ public class CompareController {
 					pw.println(cclone.getEnd());
 					pw.println("********************************************************************");
 					pw.println("********************************************************************");
+					dnewClones.add(dclone);
+					cnewClones.add(cclone);
 				}else{
 					pw2.println("-----------decompile-----------");
 					pw2.println(dclone.getId());
@@ -217,10 +225,13 @@ public class CompareController {
 					pw2.println(cclone.getEnd());
 					pw2.println("********************************************************************");
 					pw2.println("********************************************************************");
+					doutClones.add(dclone);
+					coutClones.add(cclone);
 					flag = false;
 				}
 			}
 
+			//棄却クローンの仕分け
 			for(int i = 0 ; i < originClones.size() ; i++){
 				for(int j = 0 ; j < ocommon.size() ; j++){
 					if(originClones.get(i).getId() == ocommon.get(j).getId() &&
@@ -242,6 +253,7 @@ public class CompareController {
 					pw3.println(oclone.getEnd());
 					pw3.println("********************************************************************");
 					pw3.println("********************************************************************");
+					rejectClones.add(oclone);
 				}
 				flag = false;
 			}
@@ -254,4 +266,37 @@ public class CompareController {
 			System.out.println(e);
 		}
 	}
+
+	public LinkedList<Clone> getOcommon() {
+		return ocommon;
+	}
+
+	public LinkedList<Clone> getDcommon() {
+		return dcommon;
+	}
+
+	public LinkedList<Clone> getCcommon() {
+		return ccommon;
+	}
+
+	public LinkedList<Clone> getDnewClones() {
+		return dnewClones;
+	}
+
+	public LinkedList<Clone> getCnewClones() {
+		return cnewClones;
+	}
+
+	public LinkedList<Clone> getDoutClones() {
+		return doutClones;
+	}
+
+	public LinkedList<Clone> getCoutClones() {
+		return coutClones;
+	}
+
+	public LinkedList<Clone> getRejectClones() {
+		return rejectClones;
+	}
+
 }
