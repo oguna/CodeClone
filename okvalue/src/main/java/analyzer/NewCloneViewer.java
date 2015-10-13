@@ -16,7 +16,7 @@ import org.apache.commons.lang3.StringEscapeUtils;
 
 import parser.CompareParser;
 
-public class Viewer {
+public class NewCloneViewer {
 	public void newClone(CompareParser cParser){
 		LinkedList<Clone> dnewClones = new LinkedList<Clone>();
 		LinkedList<Clone> cnewClones = new LinkedList<Clone>();
@@ -37,8 +37,8 @@ public class Viewer {
 			pw.println("	<table border='3'>");
 			pw.println("	<tr bgcolor='yellow'>");
 			pw.println("	<th>Id</th>");
-			pw.println("	<th>Decompile</th>");
 			pw.println("	<th>Origin</th>");
+			pw.println("	<th>Decompile</th>");
 			pw.println("	<th>Compare</th>");
 			pw.println("	</tr>");
 
@@ -72,6 +72,7 @@ public class Viewer {
 			pw.println("	</table>");
 			pw.println("	</ul>");
 			pw.println("</body>");
+			pw.println("</html>");
 			pw.close();
 		} catch (FileNotFoundException e) {
 			System.out.println(e);
@@ -81,7 +82,7 @@ public class Viewer {
 	}
 
 	public void generate(PrintWriter pw,int tmp ,int count,Clone dclone,Clone cclone){
-		//int linenum;
+		int linenum;
 		String location;
 		String str;
 		int start;
@@ -92,9 +93,9 @@ public class Viewer {
 			 * index.html生成
 			 */
 			pw.println("		<td>Code Clone" + tmp + "-" + count + "</td>");
-			pw.print("		<td><a href=" + "data/newclone/" + tmp + "-" + count + "(decompile).html>");
-			pw.println(dclone.getFilename() +"</a></td>");
 			pw.print("		<td><a href=" + "data/newclone/" + tmp + "-" + count + "(origin).html>");
+			pw.println(dclone.getFilename() +"</a></td>");
+			pw.print("		<td><a href=" + "data/newclone/" + tmp + "-" + count + "(decompile).html>");
 			pw.println(cclone.getFilename() +"</a></td>");
 			pw.print("		<td><a href=" + "data/newclone/" + tmp + "-" + count + ".html>");
 			pw.println(tmp + "-" + count +"</a></td>");
@@ -128,9 +129,9 @@ public class Viewer {
 				BufferedReader br = new BufferedReader(new FileReader(readfile));
 
 				str = br.readLine();
-				//linenum = 1;
+				linenum = 1;
 				while(str != null){
-					//if(start == linenum) pw2.println("<a name= \"label\" />");
+					if(start == linenum) pw2.println(StringEscapeUtils.escapeHtml4("<a name= \"label\" />"));
 					str = StringEscapeUtils.escapeHtml4(str);
 					pw2.println(str);
 					str = br.readLine();
@@ -139,7 +140,8 @@ public class Viewer {
 				br.close();
 
 			pw2.println("	</pre>");
-			pw2.println("<body>");
+			pw2.println("</body>");
+			pw2.println("</html>");
 			pw2.close();
 
 			/*
@@ -181,7 +183,8 @@ public class Viewer {
 				br2.close();
 
 			pw3.println("	</pre>");
-			pw3.println("<body>");
+			pw3.println("</body>");
+			pw.println("</html>");
 			pw3.close();
 
 			/*
@@ -192,8 +195,8 @@ public class Viewer {
 			pw4.println("<HTML>");
 			pw4.println("	<HEAD></HEAD>");
 			pw4.println("	<FRAMESET COLS='50%,50%'>");
-			pw4.println("	<FRAME SRC='" +  tmp + "-" + count + "(decompile).html' SCROLLING='YES'>");
 			pw4.println("	<FRAME SRC='" +  tmp + "-" + count + "(origin).html' SCROLLING='YES'>");
+			pw4.println("	<FRAME SRC='" +  tmp + "-" + count + "(decompile).html' SCROLLING='YES'>");
 			pw4.println("	</FRAMESET>");
 			pw4.println("</HTML>");
 			pw4.close();
