@@ -24,7 +24,7 @@ public class Counter {
 				tmp = ocommon.get(i).getId();
 			}
 		}
-		System.out.println("origincommonclone : " + count);
+		System.out.println("originCommonClone : " + count);
 
 		tmp = dcommon.get(0).getId();
 		count = 1;
@@ -34,7 +34,7 @@ public class Counter {
 				tmp = dcommon.get(i).getId();
 			}
 		}
-		System.out.println("commonclone : " + count);
+		System.out.println("decompileCommonClone : " + count);
 
 		tmp = dnewClones.get(0).getId();
 		count = 1;
@@ -44,16 +44,21 @@ public class Counter {
 				tmp = dnewClones.get(i).getId();
 			}
 		}
-		System.out.println("newclone : " + count);
+		System.out.println("newClone : " + count);
 
 		tmp = rejectClones.get(0).getId();
 		count = 1;
+		int count2=1;
+		int count3=0;
 		for(int i=1;i<rejectClones.size();i++){
 			if(tmp != rejectClones.get(i).getId()){
 				count ++;
+				if(count2 == 1) count3++;
+				else count2=1;
 				tmp = rejectClones.get(i).getId();
-			}
+			}else count2++;
 		}
-		System.out.println("rejectclone : " +count);
+		System.out.println("rejectClone : " +count);
+		System.out.println("reject : " +count3);
 	}
 }

@@ -85,6 +85,7 @@ public class NewCloneViewer {
 		int linenum;
 		String location;
 		String str;
+		String pre = "";
 		int start;
 		int end;
 
@@ -93,9 +94,9 @@ public class NewCloneViewer {
 			 * index.html生成
 			 */
 			pw.println("		<td>Code Clone" + tmp + "-" + count + "</td>");
-			pw.print("		<td><a href=" + "data/newclone/" + tmp + "-" + count + "(origin).html>");
+			pw.print("		<td><a href=" + "data/newclone/" + tmp + "-" + count + "(origin).html#label>");
 			pw.println(dclone.getFilename() +"</a></td>");
-			pw.print("		<td><a href=" + "data/newclone/" + tmp + "-" + count + "(decompile).html>");
+			pw.print("		<td><a href=" + "data/newclone/" + tmp + "-" + count + "(decompile).html#label>");
 			pw.println(cclone.getFilename() +"</a></td>");
 			pw.print("		<td><a href=" + "data/newclone/" + tmp + "-" + count + ".html>");
 			pw.println(tmp + "-" + count +"</a></td>");
@@ -119,7 +120,11 @@ public class NewCloneViewer {
 			end = dclone.getEnd();
 			for(int j = start ; j <= end ; j++){
 				pw2.print(j);
-				if(j != end) pw2.print(",");
+				pre = pre + j;
+				if(j != end){
+					pw2.print(",");
+					pre = pre + ",";
+				}
 			}
 			pw2.println("]'>");
 
@@ -131,11 +136,18 @@ public class NewCloneViewer {
 				str = br.readLine();
 				linenum = 1;
 				while(str != null){
-					if(start == linenum) pw2.println(StringEscapeUtils.escapeHtml4("<a name= \"label\" />"));
+					if(start == linenum){
+						pw2.println("</pre>");
+						pw2.println("<a name= \"label\" /></a>");
+						pw2.print("<pre class='brush: java; ruler: true; first-line: ");
+						pw2.print(start);
+						pw2.println("; highlight: [" + pre + "]'>");
+						pre = "";
+					}
 					str = StringEscapeUtils.escapeHtml4(str);
 					pw2.println(str);
 					str = br.readLine();
-					//linenum++;
+					linenum++;
 				}
 				br.close();
 
@@ -162,7 +174,11 @@ public class NewCloneViewer {
 			end = cclone.getEnd();
 			for(int j = start ; j <= end ; j++){
 				pw3.print(j);
-				if(j != end) pw3.print(",");
+				pre = pre + j;
+				if(j != end){
+					pw3.print(",");
+					pre = pre + ",";
+				}
 			}
 			pw3.println("]'>");
 
@@ -172,13 +188,20 @@ public class NewCloneViewer {
 				BufferedReader br2 = new BufferedReader(new FileReader(readfile2));
 
 				str = br2.readLine();
-				//linenum = 1;
+				linenum = 1;
 				while(str != null){
-					//if(start == linenum) pw3.println("<a name='label' />");
+					if(start == linenum){
+						pw3.println("</pre>");
+						pw3.println("<a name= \"label\" /></a>");
+						pw3.print("<pre class='brush: java; ruler: true; first-line: ");
+						pw3.print(start);
+						pw3.println("; highlight: [" + pre + "]'>");
+						pre = "";
+					}
 					str = StringEscapeUtils.escapeHtml4(str);
 					pw3.println(str);
 					str = br2.readLine();
-					//linenum++;
+					linenum++;
 				}
 				br2.close();
 
@@ -195,8 +218,8 @@ public class NewCloneViewer {
 			pw4.println("<HTML>");
 			pw4.println("	<HEAD></HEAD>");
 			pw4.println("	<FRAMESET COLS='50%,50%'>");
-			pw4.println("	<FRAME SRC='" +  tmp + "-" + count + "(origin).html' SCROLLING='YES'>");
-			pw4.println("	<FRAME SRC='" +  tmp + "-" + count + "(decompile).html' SCROLLING='YES'>");
+			pw4.println("	<FRAME SRC='" +  tmp + "-" + count + "(origin).html#label' SCROLLING='YES'>");
+			pw4.println("	<FRAME SRC='" +  tmp + "-" + count + "(decompile).html#label' SCROLLING='YES'>");
 			pw4.println("	</FRAMESET>");
 			pw4.println("</HTML>");
 			pw4.close();

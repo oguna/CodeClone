@@ -81,6 +81,8 @@ public class RejectCloneViewer {
 		int linenum;
 		String location;
 		String str;
+		String pre="";
+		String commentline = "/*";
 		int start;
 		int end;
 
@@ -89,7 +91,7 @@ public class RejectCloneViewer {
 			 * index.html生成
 			 */
 			pw.println("		<td>Code Clone" + tmp + "-" + count + "</td>");
-			pw.print("		<td><a href=" + "data/reject/" + tmp + "-" + count + "(origin).html>");
+			pw.print("		<td><a href=" + "data/reject/" + tmp + "-" + count + "(origin).html#label>");
 			pw.println(rclone.getFilename() +"</a></td>");
 
 			/*
@@ -110,7 +112,11 @@ public class RejectCloneViewer {
 			end = rclone.getEnd();
 			for(int j = start ; j <= end ; j++){
 				pw2.print(j);
-				if(j != end) pw2.print(",");
+				pre = pre + j;
+				if(j != end){
+					pw2.print(",");
+					pre = pre + ",";
+				}
 			}
 			pw2.println("]'>");
 
@@ -122,11 +128,18 @@ public class RejectCloneViewer {
 				str = br.readLine();
 				linenum = 1;
 				while(str != null){
-					if(start == linenum) pw2.println(StringEscapeUtils.escapeHtml4("<a name= \"label\" />"));
+					if(start == linenum){
+						pw2.println("</pre>");
+						pw2.println("<a name= \"label\" /></a>");
+						pw2.print("<pre class='brush: java; ruler: true; first-line: ");
+						pw2.print(start);
+						pw2.println("; highlight: [" + pre + "]'>");
+						pre = "";
+					}
 					str = StringEscapeUtils.escapeHtml4(str);
 					pw2.println(str);
 					str = br.readLine();
-					//linenum++;
+					linenum++;
 				}
 				br.close();
 
@@ -159,13 +172,11 @@ public class RejectCloneViewer {
 					//ソースコード(decompile)本文
 					BufferedReader br2 = new BufferedReader(new FileReader(decompilefile));
 					str = br2.readLine();
-					//linenum = 1;
+
 					while(str != null){
-						//if(start == linenum) pw3.println("<a name='label' />");
 						str = StringEscapeUtils.escapeHtml4(str);
 						pw3.println(str);
 						str = br2.readLine();
-						//linenum++;
 					}
 					br2.close();
 
@@ -186,7 +197,7 @@ public class RejectCloneViewer {
 				pw4.println("<HTML>");
 				pw4.println("	<HEAD></HEAD>");
 				pw4.println("	<FRAMESET COLS='50%,50%'>");
-				pw4.println("	<FRAME SRC='" +  tmp + "-" + count + "(origin).html' SCROLLING='YES'>");
+				pw4.println("	<FRAME SRC='" +  tmp + "-" + count + "(origin).html#label' SCROLLING='YES'>");
 				pw4.println("	<FRAME SRC='" +  tmp + "-" + count + "(decompile).html' SCROLLING='YES'>");
 				pw4.println("	</FRAMESET>");
 				pw4.println("</HTML>");

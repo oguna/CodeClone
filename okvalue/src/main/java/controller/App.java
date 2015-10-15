@@ -12,6 +12,7 @@ import parser.CompareParser;
 import parser.DecompileParser;
 import parser.OriginParser;
 import analyzer.Counter;
+import analyzer.NewCloneViewer;
 import analyzer.RejectCloneViewer;
 
 public class App {
@@ -34,8 +35,8 @@ public class App {
 		Counter count = new Counter();
 		count.execute(cParser);
 
-/*		NewCloneViewer view = new NewCloneViewer();
-		view.newClone(cParser);*/
+		NewCloneViewer view = new NewCloneViewer();
+		view.newClone(cParser);
 		RejectCloneViewer view2 = new RejectCloneViewer();
 		view2.rejectClone(cParser);
 	}
