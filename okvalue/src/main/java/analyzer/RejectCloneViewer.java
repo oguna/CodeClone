@@ -82,7 +82,7 @@ public class RejectCloneViewer {
 		String location;
 		String str;
 		String pre="";
-		String commentline = "/*";
+		String commentline;
 		int start;
 		int end;
 
@@ -156,7 +156,7 @@ public class RejectCloneViewer {
 	        if (decompilefile.exists()) {
 				File file3 = new File("C:/cygwin64/home/y-yusuke/simian/bin/Result/HTML/data/reject/" + tmp + "-" + count + "(decompile).html");
 				PrintWriter pw3 = new PrintWriter(new BufferedWriter(new FileWriter(file3)));
-				pw.print("		<td><a href=" + "data/reject/" + tmp + "-" + count + "(decompile).html>");
+				pw.print("		<td><a href=" + "data/reject/" + tmp + "-" + count + "(decompile).html#label>");
 				pw.println(rclone.getFilename() +"</a></td>");
 
 				pw3.println("<html>");
@@ -170,10 +170,40 @@ public class RejectCloneViewer {
 				pw3.println("	<pre class='brush: java; ruler: true; first-line: 1'>");
 
 					//ソースコード(decompile)本文
-					BufferedReader br2 = new BufferedReader(new FileReader(decompilefile));
-					str = br2.readLine();
+					BufferedReader br2;
+					boolean flag = false;
+					for(int i=start;i<=end;i++){
+						br2 = new BufferedReader(new FileReader(decompilefile));
+						commentline = "/*";
+						if(i <10) commentline = commentline + "   " + i + "*/";
+						else if(i <100) commentline = commentline + "  " + i + "*/";
+						else if(i <1000) commentline = commentline + " " + i + "*/";
+						else commentline = commentline + i + "*/";
 
+						str = br2.readLine();
+						linenum = 1;
+						while(str != null){
+							if(str.startsWith(commentline)){
+								start = linenum;
+								flag = true;
+								break;
+							}else linenum++;
+							str = br2.readLine();
+						}
+						if(flag == true) break;
+						br2.close();
+					}
+
+					linenum = 1;
+					br2 = new BufferedReader(new FileReader(decompilefile));
+					str = br2.readLine();
 					while(str != null){
+						if(flag == true && linenum == start){
+							pw3.println("	</pre>");
+							pw3.println("	<a name= \"label\" /></a>");
+							pw3.println("	<pre class='brush: java; ruler: true; first-line: " + (linenum+1) + "'>");
+							flag = false;
+						}else linenum++;
 						str = StringEscapeUtils.escapeHtml4(str);
 						pw3.println(str);
 						str = br2.readLine();
@@ -198,7 +228,7 @@ public class RejectCloneViewer {
 				pw4.println("	<HEAD></HEAD>");
 				pw4.println("	<FRAMESET COLS='50%,50%'>");
 				pw4.println("	<FRAME SRC='" +  tmp + "-" + count + "(origin).html#label' SCROLLING='YES'>");
-				pw4.println("	<FRAME SRC='" +  tmp + "-" + count + "(decompile).html' SCROLLING='YES'>");
+				pw4.println("	<FRAME SRC='" +  tmp + "-" + count + "(decompile).html#label' SCROLLING='YES'>");
 				pw4.println("	</FRAMESET>");
 				pw4.println("</HTML>");
 				pw4.close();
