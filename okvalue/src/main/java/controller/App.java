@@ -11,8 +11,8 @@ import model.Clone;
 import parser.CompareParser;
 import parser.DecompileParser;
 import parser.OriginParser;
+import analyzer.CommonCloneViewer;
 import analyzer.Counter;
-import analyzer.RejectCloneViewer;
 
 public class App {
 	public static void main(String[] args) {
@@ -36,7 +36,9 @@ public class App {
 
 /*		NewCloneViewer view = new NewCloneViewer();
 		view.newClone(cParser);*/
-		RejectCloneViewer view2 = new RejectCloneViewer();
-		view2.rejectClone(cParser);
+/*		RejectCloneViewer view2 = new RejectCloneViewer();
+		view2.rejectClone(cParser);*/
+		CommonCloneViewer view3 = new CommonCloneViewer();
+		view3.commonClone(cParser);
 	}
 }
