@@ -2,6 +2,9 @@ package mining;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+import java.util.LinkedList;
+
+import normalizer.NormalizedStringCreator;
 
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
@@ -13,7 +16,7 @@ public class CodeFragmentDetector {
 	public CodeFragmentDetector(){
 	}
 
-	public String execute(SVNRepository repository,String filePath, long current_revision_num, int start, int end) {
+	public CodeFragment execute(SVNRepository repository,String filePath, long current_revision_num, int start, int end,long id) {
 		SVNNodeKind nodeKind;
 		try {
 			nodeKind = repository.checkPath(filePath, current_revision_num);
@@ -27,7 +30,12 @@ public class CodeFragmentDetector {
 			String mimeType = fileProperties.getStringValue(SVNProperty.MIME_TYPE);
 			boolean isTextType = SVNProperty.isTextMimeType(mimeType);
 			if (isTextType) {
-				return trim(content.toString(),start,end);
+				NormalizedStringCreator normalizer = new NormalizedStringCreator(content.toString());
+				LinkedList<String> normalizedTokens = new LinkedList<String>();
+				normalizedTokens = normalizer.execute(start,end);
+				String code = trim(content.toString(),start,end);
+				CodeFragment codeFragment = new CodeFragment(code,normalizedTokens,id);
+				return codeFragment;
 			}
 			else {
 				System.out.println("Not a text file.");
@@ -39,7 +47,7 @@ public class CodeFragmentDetector {
 		}
 	}
 
-	public String trim(String str, int start, int end){
+	private String trim(String str, int start, int end){
 		String content = "";
 		String[] strs = str.split("\n");
 		for(int i=0 ; i < strs.length ; i++){

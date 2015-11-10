@@ -12,7 +12,7 @@ public class App {
 	public static void main(String[] args) throws SVNException {
 		RegisterRepository registerRepository = new RegisterRepository();
 		SVNRepository repository = registerRepository.execute("file:///F:/repository-objectweb");
-		Result result = new Result(repository,5);
+		Result result = new Result(repository,10);
 		result.execute();
 	}
 }

@@ -13,6 +13,8 @@ import mining.CodeFragmentDetector;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.io.SVNRepository;
 
+import similarity.CalculateSimilarity;
+
 public class Result {
 
 	SVNRepository repository;
@@ -53,6 +55,7 @@ public class Result {
 				String sql_before_fix = query.before_fix(current_revision_num);
 				String sql_after_fix = query.after_fix(current_revision_num);
 
+				System.out.println("revision " + current_revision_num + " mining start.");
 				ResultSet result_delete = statement_delete.executeQuery(sql_delete);
 				ResultSet result_add = statement_add.executeQuery(sql_add);
 				ResultSet result_before_fix = statement_before_fix.executeQuery(sql_before_fix);
@@ -61,43 +64,55 @@ public class Result {
 				CodeFragmentDetector codeFragmentDetector = new CodeFragmentDetector();
 				CodeFragment codeFragment = new CodeFragment();
 
+/*				if(result_delete != null){
+					result_delete.next();
+					codeFragment = new CodeFragment(
+						codeFragmentDetector.execute(repository,result_delete.getString(5),Long.parseLong(result_delete.getString(8)),
+						Integer.parseInt(result_delete.getString(6)),Integer.parseInt(result_delete.getString(7))),
+						Integer.parseInt(result_delete.getString(1)));
+					System.out.println(codeFragment.getContent());
+				}*/
 				if(result_delete != null){
 					while(result_delete.next()){
-						codeFragment = new CodeFragment(
-								codeFragmentDetector.execute(repository,result_delete.getString(5),Long.parseLong(result_delete.getString(8)),
-								Integer.parseInt(result_delete.getString(6)),Integer.parseInt(result_delete.getString(7))),
+						codeFragment = codeFragmentDetector.execute(repository,
+								result_delete.getString(5),Long.parseLong(result_delete.getString(8)),
+								Integer.parseInt(result_delete.getString(6)),Integer.parseInt(result_delete.getString(7)),
 								Integer.parseInt(result_delete.getString(1)));
 						list_delete.add(codeFragment);
 					}
 				}
 				if(result_add != null){
 					while(result_add.next()){
-						codeFragment = new CodeFragment(
-								codeFragmentDetector.execute(repository,result_add.getString(5),Long.parseLong(result_add.getString(8)),
-								Integer.parseInt(result_add.getString(6)),Integer.parseInt(result_add.getString(7))),
+						codeFragment = codeFragmentDetector.execute(repository,
+								result_add.getString(5),Long.parseLong(result_add.getString(8)),
+								Integer.parseInt(result_add.getString(6)),Integer.parseInt(result_add.getString(7)),
 								Integer.parseInt(result_add.getString(1)));
 						list_add.add(codeFragment);
 					}
 				}
 				if(result_before_fix != null){
 					while(result_before_fix.next()){
-						codeFragment = new CodeFragment(
-								codeFragmentDetector.execute(repository,result_before_fix.getString(5),Long.parseLong(result_before_fix.getString(8)),
-								Integer.parseInt(result_before_fix.getString(6)),Integer.parseInt(result_before_fix.getString(7))),
+						codeFragment = codeFragmentDetector.execute(repository,
+								result_before_fix.getString(5),Long.parseLong(result_before_fix.getString(8)),
+								Integer.parseInt(result_before_fix.getString(6)),Integer.parseInt(result_before_fix.getString(7)),
 								Integer.parseInt(result_before_fix.getString(1)));
 						list_before_fix.add(codeFragment);
 					}
 				}
 				if(result_after_fix != null){
 					while(result_after_fix.next()){
-						codeFragment = new CodeFragment(
-								codeFragmentDetector.execute(repository,result_after_fix.getString(5),Long.parseLong(result_after_fix.getString(8)),
-								Integer.parseInt(result_after_fix.getString(6)),Integer.parseInt(result_after_fix.getString(7))),
+						codeFragment = codeFragmentDetector.execute(repository,
+								result_after_fix.getString(5),Long.parseLong(result_after_fix.getString(8)),
+								Integer.parseInt(result_after_fix.getString(6)),Integer.parseInt(result_after_fix.getString(7)),
 								Integer.parseInt(result_after_fix.getString(1)));
 						list_after_fix.add(codeFragment);
 					}
 				}
-
+				System.out.println("revision " + current_revision_num + " mining finished.");
+				System.out.println("revision " + current_revision_num + " calculate similarity start.");
+				CalculateSimilarity calculateSimilarity = new CalculateSimilarity(list_delete, list_add, list_before_fix, list_after_fix);
+				calculateSimilarity.execute();
+				System.out.println("revision " + current_revision_num + " calculate similarity finished.");
 				list_delete.clear();
 				list_add.clear();
 				list_before_fix.clear();
