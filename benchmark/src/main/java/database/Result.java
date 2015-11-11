@@ -55,7 +55,6 @@ public class Result {
 				String sql_before_fix = query.before_fix(current_revision_num);
 				String sql_after_fix = query.after_fix(current_revision_num);
 
-				System.out.println("revision " + current_revision_num + " mining start.");
 				ResultSet result_delete = statement_delete.executeQuery(sql_delete);
 				ResultSet result_add = statement_add.executeQuery(sql_add);
 				ResultSet result_before_fix = statement_before_fix.executeQuery(sql_before_fix);
@@ -64,14 +63,8 @@ public class Result {
 				CodeFragmentDetector codeFragmentDetector = new CodeFragmentDetector();
 				CodeFragment codeFragment = new CodeFragment();
 
-/*				if(result_delete != null){
-					result_delete.next();
-					codeFragment = new CodeFragment(
-						codeFragmentDetector.execute(repository,result_delete.getString(5),Long.parseLong(result_delete.getString(8)),
-						Integer.parseInt(result_delete.getString(6)),Integer.parseInt(result_delete.getString(7))),
-						Integer.parseInt(result_delete.getString(1)));
-					System.out.println(codeFragment.getContent());
-				}*/
+				System.out.println("revision " + current_revision_num + " mining start.");
+				//削除されたメソッドを特定
 				if(result_delete != null){
 					while(result_delete.next()){
 						codeFragment = codeFragmentDetector.execute(repository,
@@ -81,6 +74,8 @@ public class Result {
 						list_delete.add(codeFragment);
 					}
 				}
+
+				//追加されたメソッドを特定
 				if(result_add != null){
 					while(result_add.next()){
 						codeFragment = codeFragmentDetector.execute(repository,
@@ -90,6 +85,8 @@ public class Result {
 						list_add.add(codeFragment);
 					}
 				}
+
+				//修正前のメソッドを特定
 				if(result_before_fix != null){
 					while(result_before_fix.next()){
 						codeFragment = codeFragmentDetector.execute(repository,
@@ -99,6 +96,8 @@ public class Result {
 						list_before_fix.add(codeFragment);
 					}
 				}
+
+				//修正後のメソッドを特定
 				if(result_after_fix != null){
 					while(result_after_fix.next()){
 						codeFragment = codeFragmentDetector.execute(repository,
@@ -109,10 +108,13 @@ public class Result {
 					}
 				}
 				System.out.println("revision " + current_revision_num + " mining finished.");
+
+				//類似度を算出し，結果を出力
 				System.out.println("revision " + current_revision_num + " calculate similarity start.");
 				CalculateSimilarity calculateSimilarity = new CalculateSimilarity(list_delete, list_add, list_before_fix, list_after_fix);
-				calculateSimilarity.execute();
+				calculateSimilarity.execute(current_revision_num);
 				System.out.println("revision " + current_revision_num + " calculate similarity finished.");
+
 				list_delete.clear();
 				list_add.clear();
 				list_before_fix.clear();
@@ -125,21 +127,11 @@ public class Result {
 			System.err.println(e);
 		}finally {
 			try {
-				if (statement_delete != null) {
-					statement_delete.close();
-				}
-				if (statement_add != null) {
-					statement_add.close();
-				}
-				if (statement_before_fix != null) {
-					statement_before_fix.close();
-				}
-				if (statement_after_fix != null) {
-					statement_after_fix.close();
-				}
-				if (connection != null) {
-					connection.close();
-				}
+				if (statement_delete != null) statement_delete.close();
+				if (statement_add != null) statement_add.close();
+				if (statement_before_fix != null) statement_before_fix.close();
+				if (statement_after_fix != null) statement_after_fix.close();
+				if (connection != null) connection.close();
 			} catch (SQLException e) {
 				System.err.println(e);
 			}

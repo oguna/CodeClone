@@ -30,6 +30,7 @@ public class NormalizedStringCreator{
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setSource(sourceCode.toCharArray());
 		final CompilationUnit unit = (CompilationUnit) parser.createAST(new NullProgressMonitor());
+
 		unit.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(MethodDeclaration node) {
@@ -38,7 +39,10 @@ public class NormalizedStringCreator{
 				init();
 				StringBuffer sb = new StringBuffer();
 
-				int startLine = unit.getLineNumber(node.getName().getStartPosition());
+				//変更されたメソッドかどうかを判断
+				int startLine;
+				if(node.getJavadoc() != null) startLine = unit.getLineNumber(node.getJavadoc().getStartPosition());
+				else startLine = unit.getLineNumber(node.getName().getStartPosition());
 				int endLine = unit.getLineNumber(node.getStartPosition()+ node.getLength());
 				if(start != startLine || end != endLine) return super.visit(node);
 
@@ -70,8 +74,8 @@ public class NormalizedStringCreator{
 					if (state.length() > 0) statements.add(state);
 				}
 
-				for (int i = 0; i < statements.size(); i++) {
-					String str = statements.get(i);
+				//識別子を正規化
+				for(String str : statements){
 					StringTokenizer st = new StringTokenizer(str," !#$%&'()-=^~|[{]}+:*,<.>/?", true);
 					while (st.hasMoreTokens()) {
 						String tmp = st.nextToken();
@@ -110,44 +114,25 @@ public class NormalizedStringCreator{
 	}
 
 	private synchronized void init() {
-		reservedWord.add("assert");
-		reservedWord.add("boolean");
-		reservedWord.add("break");
-		reservedWord.add("byte");
-		reservedWord.add("case");
-		reservedWord.add("catch");
-		reservedWord.add("char");
-		reservedWord.add("class");
-		reservedWord.add("continue");
-		reservedWord.add("default");
-		reservedWord.add("do");
-		reservedWord.add("double");
-		reservedWord.add("else");
-		reservedWord.add("enum");
-		reservedWord.add("extends");
-		reservedWord.add("finally");
-		reservedWord.add("float");
-		reservedWord.add("for");
-		reservedWord.add("goto");
-		reservedWord.add("if");
-		reservedWord.add("implements");
-		reservedWord.add("instanceof");
-		reservedWord.add("int");
-		reservedWord.add("interface");
-		reservedWord.add("long");
-		reservedWord.add("new");
-		reservedWord.add("return");
-		reservedWord.add("short");
-		reservedWord.add("super");
-		reservedWord.add("switch");
-		reservedWord.add("this");
-		reservedWord.add("throw");
-		reservedWord.add("throws");
-		reservedWord.add("try");
-		reservedWord.add("void");
-		reservedWord.add("while");
-		reservedWord.add("true");
-		reservedWord.add("false");
+		reservedWord.add("assert");reservedWord.add("boolean");
+		reservedWord.add("break");reservedWord.add("byte");
+		reservedWord.add("case");reservedWord.add("catch");
+		reservedWord.add("char");reservedWord.add("class");
+		reservedWord.add("continue");reservedWord.add("default");
+		reservedWord.add("do");reservedWord.add("double");
+		reservedWord.add("else");reservedWord.add("enum");
+		reservedWord.add("extends");reservedWord.add("finally");
+		reservedWord.add("float");reservedWord.add("for");
+		reservedWord.add("goto");reservedWord.add("if");
+		reservedWord.add("implements");reservedWord.add("instanceof");
+		reservedWord.add("int");reservedWord.add("interface");
+		reservedWord.add("long");reservedWord.add("new");
+		reservedWord.add("return");reservedWord.add("short");
+		reservedWord.add("super");reservedWord.add("switch");
+		reservedWord.add("this");reservedWord.add("throw");
+		reservedWord.add("throws");reservedWord.add("try");
+		reservedWord.add("void");reservedWord.add("while");
+		reservedWord.add("true");reservedWord.add("false");
 		reservedWord.add("null");
 	}
 }
