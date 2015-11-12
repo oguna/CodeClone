@@ -133,4 +133,12 @@ public class Query {
 				+" AND (CODE_FRAGMENT.END_LINE - CODE_FRAGMENT.START_LINE + 1) > 5";
 		return sql_after_fix;
 	}
+
+	public String link(int i) {
+		String sql_link = "select CODE_FRAGMENT_LINK.BEFORE_ELEMENT_ID,"
+				+ "CODE_FRAGMENT_LINK.AFTER_ELEMENT_ID "
+				+ "from CODE_FRAGMENT_LINK "
+				+ "where CODE_FRAGMENT_LINK.BEFORE_COMBINED_REVISION_ID = " + i;
+		return sql_link;
+	}
 }

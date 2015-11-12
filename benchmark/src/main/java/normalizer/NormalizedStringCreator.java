@@ -1,7 +1,7 @@
 package normalizer;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.StringTokenizer;
 
 import org.apache.commons.lang3.StringUtils;
@@ -12,20 +12,21 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
-
+/**
+ * @author y-yusuke
+ *
+ */
 public class NormalizedStringCreator{
-	public final static char QUOTE = '\'';
-	public final static char DOUBLE_QUOTE = '"';
 
-	final ArrayList<String> reservedWord = new ArrayList<String>();
+	final List<String> reservedWord = new ArrayList<String>();
 	String sourceCode;
 
 	public NormalizedStringCreator (String sourceCode) {
 		this.sourceCode = sourceCode;
 	}
 
-	public LinkedList<String> execute(int start,int end) {
-		LinkedList<String> tokens = new LinkedList<String>();
+	public List<String> execute(int start,int end) {
+		List<String> tokens = new ArrayList<String>();
 		final ASTParser parser = ASTParser.newParser(AST.JLS8);
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setSource(sourceCode.toCharArray());
@@ -68,7 +69,7 @@ public class NormalizedStringCreator{
 
 				String code = sb.toString();
 				String[] tmpStatements = code.split("\n");
-				ArrayList<String> statements = new ArrayList<String>();
+				List<String> statements = new ArrayList<String>();
 				for (String state : tmpStatements) {
 					state = state.trim();
 					if (state.length() > 0) statements.add(state);
@@ -108,8 +109,8 @@ public class NormalizedStringCreator{
 		else return false;
 	}
 
-	private static boolean isWhiteSpace(String tmp2) {
-		if (tmp2.equals(" ") || tmp2.equals("\n") || tmp2.equals("\t")) return true;
+	private static boolean isWhiteSpace(String tmp) {
+		if (tmp.equals(" ") || tmp.equals("\n") || tmp.equals("\t")) return true;
 		else return false;
 	}
 

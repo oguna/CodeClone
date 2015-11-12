@@ -1,27 +1,35 @@
-package database;
+package main;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 
 import mining.CodeFragment;
 import mining.CodeFragmentDetector;
+import mining.CodeFragmentLink;
 
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.io.SVNRepository;
 
 import similarity.CalculateSimilarity;
-
+import database.Query;
+/**
+ * @author y-yusuke
+ *
+ */
 public class Result {
 
 	SVNRepository repository;
+	String database_location;
 	int revision_num;
 
-	public Result(SVNRepository repository, int revision_num){
+	public Result(SVNRepository repository, String database_location, int revision_num){
 		this.repository = repository;
+		this.database_location = database_location;
 		this.revision_num = revision_num;
 	}
 
@@ -31,21 +39,24 @@ public class Result {
 		Statement statement_add = null;
 		Statement statement_before_fix = null;
 		Statement statement_after_fix = null;
+		Statement statement_link = null;
 
-		LinkedList<CodeFragment> list_delete = new LinkedList<CodeFragment>();
-		LinkedList<CodeFragment> list_add = new LinkedList<CodeFragment>();
-		LinkedList<CodeFragment> list_before_fix = new LinkedList<CodeFragment>();
-		LinkedList<CodeFragment> list_after_fix = new LinkedList<CodeFragment>();
+		List<CodeFragment> list_delete = new ArrayList<CodeFragment>();
+		List<CodeFragment> list_add = new ArrayList<CodeFragment>();
+		List<CodeFragment> list_before_fix = new ArrayList<CodeFragment>();
+		List<CodeFragment> list_after_fix = new ArrayList<CodeFragment>();
+		List<CodeFragmentLink> list_link = new ArrayList<CodeFragmentLink>();
 
 		try {
 			// JDBCドライバーの指定
 			Class.forName("org.sqlite.JDBC");
 			// データベースに接続
-			connection = DriverManager.getConnection("jdbc:sqlite:F:\\objectweb.db");
+			connection = DriverManager.getConnection("jdbc:sqlite:" + database_location);
 			statement_delete = connection.createStatement();
 			statement_add = connection.createStatement();
 			statement_before_fix = connection.createStatement();
 			statement_after_fix = connection.createStatement();
+			statement_link = connection.createStatement();
 
 			int current_revision_num = 1;
 			while(current_revision_num<revision_num){
@@ -54,11 +65,13 @@ public class Result {
 				String sql_add = query.add(current_revision_num);
 				String sql_before_fix = query.before_fix(current_revision_num);
 				String sql_after_fix = query.after_fix(current_revision_num);
+				String sql_link = query.link(current_revision_num);
 
 				ResultSet result_delete = statement_delete.executeQuery(sql_delete);
 				ResultSet result_add = statement_add.executeQuery(sql_add);
 				ResultSet result_before_fix = statement_before_fix.executeQuery(sql_before_fix);
 				ResultSet result_after_fix = statement_after_fix.executeQuery(sql_after_fix);
+				ResultSet result_link = statement_link.executeQuery(sql_link);
 
 				CodeFragmentDetector codeFragmentDetector = new CodeFragmentDetector();
 				CodeFragment codeFragment = new CodeFragment();
@@ -107,14 +120,24 @@ public class Result {
 						list_after_fix.add(codeFragment);
 					}
 				}
+
+				//修正前と修正後のコード片IDを取得
+				if(result_link != null){
+					while(result_link.next()){
+						CodeFragmentLink codeFragmentLink = new CodeFragmentLink(
+									Long.parseLong(result_link.getString(1)), Long.parseLong(result_link.getString(2)));
+						list_link.add(codeFragmentLink);
+					}
+				}
 				System.out.println("revision " + current_revision_num + " mining finished.");
 
 				//類似度を算出し，結果を出力
 				System.out.println("revision " + current_revision_num + " calculate similarity start.");
-				CalculateSimilarity calculateSimilarity = new CalculateSimilarity(list_delete, list_add, list_before_fix, list_after_fix);
+				CalculateSimilarity calculateSimilarity = new CalculateSimilarity(list_delete, list_add, list_before_fix, list_after_fix, list_link);
 				calculateSimilarity.execute(current_revision_num);
 				System.out.println("revision " + current_revision_num + " calculate similarity finished.");
 
+				//後処理
 				list_delete.clear();
 				list_add.clear();
 				list_before_fix.clear();

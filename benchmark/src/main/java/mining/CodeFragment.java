@@ -1,17 +1,21 @@
 package mining;
 
-import java.util.LinkedList;
-
+import java.util.ArrayList;
+import java.util.List;
+/**
+ * @author y-yusuke
+ *
+ */
 public class CodeFragment {
 	String content;
-	LinkedList<String> normalizeContent = new LinkedList<String>();
-	LinkedList<String> ngramContent = new LinkedList<String>();
+	List<String> normalizeContent = new ArrayList<String>();
+	List<String> ngramContent = new ArrayList<String>();
 	long id;
 
 	public CodeFragment(){
 	}
 
-	public CodeFragment(String content, LinkedList<String> normalizeContent, long id){
+	public CodeFragment(String content, List<String> normalizeContent, long id){
 		this.content = content;
 		this.normalizeContent = normalizeContent;
 		this.id = id;
@@ -21,7 +25,7 @@ public class CodeFragment {
 		return content;
 	}
 
-	public LinkedList<String> getNormalizeContent() {
+	public List<String> getNormalizeContent() {
 		return normalizeContent;
 	}
 
@@ -29,11 +33,11 @@ public class CodeFragment {
 		return id;
 	}
 
-	public LinkedList<String> getNgramContent() {
+	public List<String> getNgramContent() {
 		return ngramContent;
 	}
 
-	public void setNgramContent(LinkedList<String> ngramContent) {
+	public void setNgramContent(List<String> ngramContent) {
 		this.ngramContent = ngramContent;
 	}
 }

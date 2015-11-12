@@ -2,7 +2,7 @@ package mining;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
-import java.util.LinkedList;
+import java.util.List;
 
 import normalizer.NormalizedStringCreator;
 
@@ -49,7 +49,7 @@ public class CodeFragmentDetector {
 			if (isTextType) {
 				//正規化処理
 				NormalizedStringCreator normalizer = new NormalizedStringCreator(content.toString());
-				LinkedList<String> normalizedTokens = normalizer.execute(start,end);
+				List<String> normalizedTokens = normalizer.execute(start,end);
 				//変更されたメソッドの抽出
 				String code = trim(content.toString(),start,end);
 				CodeFragment codeFragment = new CodeFragment(code,normalizedTokens,id);
@@ -70,7 +70,7 @@ public class CodeFragmentDetector {
 	 * @param str
 	 * @param start
 	 * @param end
-	 * @return
+	 * @return 変更されたメソッド
 	 */
 	private String trim(String str, int start, int end){
 		String content = "";
