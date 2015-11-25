@@ -18,6 +18,8 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
  */
 public class NormalizedStringCreator{
 
+	private final static int minLines = 6;
+	private final static int minTokens = 50;
 	final List<String> reservedWord = new ArrayList<String>();
 	String sourceCode;
 
@@ -47,12 +49,24 @@ public class NormalizedStringCreator{
 				int endLine = unit.getLineNumber(node.getStartPosition()+ node.getLength());
 				if(start != startLine || end != endLine) return super.visit(node);
 
+				int javadocLine;
+				if(node.getJavadoc() != null) javadocLine = unit.getLineNumber(node.getJavadoc().getLength());
+				else javadocLine = 0;
+				if(endLine - startLine + 1 - javadocLine < minLines) return super.visit(node);
+
 				//Return Type
 				sb.append(node.getReturnType2().toString());
 				sb.append(" ");
 
 				//Method Name
 				sb.append(node.getName().toString());
+
+				/*
+				 * 簡易実装部分
+				 */
+				//******************************
+				tokens.add(node.getName().toString());
+				//******************************
 
 				//Parameters
 				sb.append("(");
@@ -91,7 +105,8 @@ public class NormalizedStringCreator{
 				return super.visit(node);
 			}
 		});
-		return tokens;
+		if(tokens.size() < minTokens) return null;
+		else return tokens;
 	}
 
 	private boolean isSymbol(String tmp) {

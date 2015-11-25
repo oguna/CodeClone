@@ -37,7 +37,7 @@ public class CodeFragmentDetector {
 		try {
 			nodeKind = repository.checkPath(filePath, current_revision_num);
 			if (nodeKind == SVNNodeKind.NONE || nodeKind == SVNNodeKind.DIR) {
-				System.err.println("Not found.");
+				System.err.println("Not found {revision:" + current_revision_num + " , filePath:" +filePath + " , range:" + start + "-" + end +"}.");
 				return null;
 			}
 
@@ -50,6 +50,7 @@ public class CodeFragmentDetector {
 				//正規化処理
 				NormalizedStringCreator normalizer = new NormalizedStringCreator(content.toString());
 				List<String> normalizedTokens = normalizer.execute(start,end);
+				if(normalizedTokens == null) return null;
 				//変更されたメソッドの抽出
 				String code = trim(content.toString(),start,end);
 				CodeFragment codeFragment = new CodeFragment(code,normalizedTokens,id);
