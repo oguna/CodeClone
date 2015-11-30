@@ -14,14 +14,13 @@ public class App {
 
 	public final static String repository_location = "file:///F:/repository-objectweb";
 	public final static String database_location = "F:/objectweb.db";
-	public final static String tmp_location = "F:/tmp";
 	public final static int endRevision = 1507;
 
 	public static void main(String[] args) throws SVNException {
 		long start = System.currentTimeMillis();
 		RegisterRepository registerRepository = new RegisterRepository();
 		SVNRepository repository = registerRepository.execute();
-		File tmpdir = new File(tmp_location);
+		File tmpdir = new File("F:/tmp");
 		tmpdir.mkdir();
 		CandidateSqueezer candidateSqueezer = new CandidateSqueezer(repository);
 		candidateSqueezer.execute();
