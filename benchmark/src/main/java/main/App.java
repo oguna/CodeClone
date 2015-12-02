@@ -13,7 +13,7 @@ import org.tmatesoft.svn.core.io.SVNRepository;
 public class App {
 
 	public final static String repository_location = "file:///F:/repository-objectweb";
-	public final static String database_location = "F:/objectweb.db";
+	public final static String database_location = "F:/objectwebtmp.db";
 	public final static int endRevision = 1507;
 
 	public static void main(String[] args) throws SVNException {

@@ -173,12 +173,9 @@ public class CalculateSimilarity {
 	 * @return true or false
 	 */
 	private boolean similarityCompare(List<String> list, List<String> list2) {
-		if (!(list.get(0).equals(list2.get(0))))
-			return false;
-
 		List<Integer> count = new ArrayList<Integer>();
-		for (int i = 1; i < list.size(); i++) {
-			for (int j = 1; j < list2.size(); j++) {
+		for (int i = 0; i < list.size(); i++) {
+			for (int j = 0; j < list2.size(); j++) {
 				if (list.get(i).equals(list2.get(j))) {
 					if (count.contains(j))
 						continue;
@@ -193,8 +190,7 @@ public class CalculateSimilarity {
 		if (((double) count.size() / (double) list.size()) >= threshold
 				&& ((double) count.size() / (double) list2.size()) >= threshold)
 			return true;
-		else
-			return false;
+		else return false;
 	}
 
 	/**
