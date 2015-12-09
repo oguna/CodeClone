@@ -1,4 +1,4 @@
-package mining;
+package fragmentdetector;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;

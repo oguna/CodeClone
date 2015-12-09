@@ -1,4 +1,4 @@
-package mining;
+package fragmentdetector;
 
 /**
  * @author y-yusuke

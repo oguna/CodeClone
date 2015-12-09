@@ -11,15 +11,15 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import fragmentdetector.CodeFragment;
+import fragmentdetector.CodeFragmentLink;
 import main.CandidateSqueezer;
-import mining.CodeFragment;
-import mining.CodeFragmentLink;
 
 /**
  * @author y-yusuke
  *
  */
-public class CalculateSimilarity {
+public class SimilarityCalculator {
 
 	private final static int n = 3;
 	private final static double threshold = 0.7;
@@ -29,7 +29,7 @@ public class CalculateSimilarity {
 	List<CodeFragment> list_after_fix;
 	List<CodeFragmentLink> list_link;
 
-	public CalculateSimilarity(List<CodeFragment> list_delete,
+	public SimilarityCalculator(List<CodeFragment> list_delete,
 			List<CodeFragment> list_add, List<CodeFragment> list_before_fix,
 			List<CodeFragment> list_after_fix, List<CodeFragmentLink> list_link) {
 		this.list_delete = list_delete;

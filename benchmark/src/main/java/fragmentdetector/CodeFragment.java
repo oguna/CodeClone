@@ -1,4 +1,4 @@
-package mining;
+package fragmentdetector;
 
 import java.util.ArrayList;
 import java.util.List;

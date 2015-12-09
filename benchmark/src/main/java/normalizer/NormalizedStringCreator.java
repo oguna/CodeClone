@@ -17,7 +17,7 @@ import org.eclipse.jdt.internal.compiler.parser.Scanner;
  * @author y-yusuke
  *
  */
-public class NormalizedStringCreator{
+public class NormalizedStringCreator {
 
 	final List<String> reservedWord = new ArrayList<String>();
 	String sourceCode;
@@ -66,8 +66,6 @@ public class NormalizedStringCreator{
 						e.printStackTrace();
 					}
 				}
-				System.out.println(node.toString());
-				for(int i = 0 ; i<tokens.size() ; i++) System.out.print(tokens.get(i) + " ");
 				return super.visit(node);
 			}
 		});

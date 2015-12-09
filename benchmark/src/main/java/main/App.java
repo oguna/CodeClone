@@ -2,10 +2,10 @@ package main;
 
 import java.io.File;
 
-import mining.RegisterRepository;
-
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.io.SVNRepository;
+
+import register.RepositoryRegister;
 /**
  * @author y-yusuke
  *
@@ -18,7 +18,7 @@ public class App {
 
 	public static void main(String[] args) throws SVNException {
 		long start = System.currentTimeMillis();
-		RegisterRepository registerRepository = new RegisterRepository();
+		RepositoryRegister registerRepository = new RepositoryRegister();
 		SVNRepository repository = registerRepository.execute();
 		File tmpdir = new File("F:/tmp");
 		tmpdir.mkdir();

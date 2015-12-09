@@ -8,15 +8,14 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import mining.CodeFragment;
-import mining.CodeFragmentDetector;
-import mining.CodeFragmentLink;
-
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.io.SVNRepository;
 
-import similarity.CalculateSimilarity;
+import similarity.SimilarityCalculator;
 import database.Query;
+import fragmentdetector.CodeFragment;
+import fragmentdetector.CodeFragmentDetector;
+import fragmentdetector.CodeFragmentLink;
 /**
  * @author y-yusuke
  *
@@ -137,7 +136,7 @@ public class CandidateSqueezer {
 
 				//類似度を算出し，結果を出力
 				System.out.println("revision " + current_revision_num + " calculate similarity start.");
-				CalculateSimilarity calculateSimilarity = new CalculateSimilarity(list_delete, list_add, list_before_fix, list_after_fix, list_link);
+				SimilarityCalculator calculateSimilarity = new SimilarityCalculator(list_delete, list_add, list_before_fix, list_after_fix, list_link);
 				calculateSimilarity.execute(current_revision_num,statement_candidate);
 				System.out.println("revision " + current_revision_num + " calculate similarity finished.");
 
