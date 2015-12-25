@@ -11,9 +11,9 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import main.CandidateSqueezer;
 import fragmentdetector.CodeFragment;
 import fragmentdetector.CodeFragmentLink;
-import main.CandidateSqueezer;
 
 /**
  * @author y-yusuke
@@ -206,7 +206,7 @@ public class SimilarityCalculator {
 			CodeFragment add_codeFragment, int current_revision_num) {
 		try {
 			statement.execute(insertValues(add_codeFragment,
-					current_revision_num, "add"));
+					current_revision_num + 1, "add"));
 			for (int i = 0; i < delete_count.size(); i++)
 				statement.execute(insertValues(
 						list_delete.get(delete_count.get(i)),
@@ -232,7 +232,7 @@ public class SimilarityCalculator {
 			int current_revision_num) {
 		try {
 			statement.execute(insertValues(after_fix_codeFragment,
-					current_revision_num, "after_fix"));
+					current_revision_num + 1, "after_fix"));
 			statement.execute(insertValues(before_fix_codeFragment,
 					current_revision_num, "before_fix"));
 			for (int i = 0; i < delete_count.size(); i++)

@@ -7,6 +7,7 @@ import java.util.List;
  *
  */
 public class CodeFragment {
+	String source;
 	String content;
 	List<String> normalizeContent = new ArrayList<String>();
 	List<String> ngramContent = new ArrayList<String>();

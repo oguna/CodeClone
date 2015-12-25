@@ -53,7 +53,7 @@ public class CodeFragmentDetector {
 				if(normalizedTokens == null) return null;
 				//変更されたメソッドの抽出
 				String code = trim(content.toString(),start,end);
-				CodeFragment codeFragment = new CodeFragment(code,normalizedTokens,id);
+				CodeFragment codeFragment = new CodeFragment(code, normalizedTokens, id);
 				return codeFragment;
 			}
 			else {

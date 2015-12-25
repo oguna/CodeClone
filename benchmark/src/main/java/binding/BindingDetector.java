@@ -7,12 +7,14 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import main.App;
 
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -28,10 +30,21 @@ import org.tmatesoft.svn.core.wc.SVNLogClient;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 
 public class BindingDetector {
-	public BindingDetector() {
+	SVNRepository repository;
+	long revision;
+	ResultSet result_binding;
+
+	public BindingDetector(SVNRepository repository, long revision, ResultSet result_binding) {
+		this.repository = repository;
+		this.revision = revision;
+		this.result_binding = result_binding;
 	}
 
-	public void getBindings(long revision) throws SVNException{
+	public void execute(){
+
+	}
+
+	private List<Binding> getBindings() throws SVNException{
 		ASTParser parser = ASTParser.newParser(AST.JLS8);
 		final Map<String, String> options = JavaCore.getOptions();
 		JavaCore.setComplianceOptions(JavaCore.VERSION_1_8, options);
@@ -41,10 +54,43 @@ public class BindingDetector {
 		parser.setBindingsRecovery(true);
 		parser.setStatementsRecovery(true);
 		String[] keys = new String[] {};
-		//parser.createASTs(App.tmp_location + "/" + revision, null, keys, new ASTRequestor(), new NullProgressMonitor());
+		List<String> filePaths = checkOutFiles();
+		String[] sources = filePaths.toArray(new String[0]);
+		String[] classpathEntries = {};
+		String[] sourcepathEntries = {};
+		parser.setEnvironment(classpathEntries, sourcepathEntries, null, true);
+
+		List<Binding> binds = new ArrayList<Binding>();
+		parser.createASTs(sources, null, keys, new Requestor(binds),new NullProgressMonitor());
+		return binds;
 	}
 
-	public List<String> getFilePath(long revision) {
+	private List<String> checkOutFiles() throws SVNException{
+		List<String> sources = new ArrayList<String>();
+		List<String> filePaths = getFilePath();
+		SVNProperties fileProperties = new SVNProperties();
+		OutputStream content = new ByteArrayOutputStream ();
+		File checkOutDir = new File(App.tmp_location + "/" + revision);
+		checkOutDir.mkdir();
+		for(String filePath : filePaths){
+			filePath = filePath.replace(App.repository_location,"");
+			repository.getFile(filePath, revision, fileProperties, content);
+		    File file = new File(App.tmp_location + "/" + revision + filePath);
+		    File dir = new File(file.getParent());
+		    if(!dir.exists()) dir.mkdirs();
+		    try {
+				PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
+				pw.write(content.toString());
+				pw.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		    sources.add(App.tmp_location + "/" + revision + filePath);
+		}
+		return sources;
+	}
+
+	private List<String> getFilePath() {
 		try {
 			SVNURL svnURL = SVNURL.parseURIEncoded(App.repository_location);
 			ISVNAuthenticationManager authManager = null;
@@ -65,28 +111,6 @@ public class BindingDetector {
 		} catch (SVNException e) {
 			e.printStackTrace();
 			return null;
-		}
-	}
-
-	public void checkOutFiles(SVNRepository repository, long revision) throws SVNException{
-		List<String> filePaths = getFilePath(revision);
-		SVNProperties fileProperties = new SVNProperties();
-		OutputStream content = new ByteArrayOutputStream ();
-		File checkOutDir = new File(App.tmp_location + "/" + revision);
-		checkOutDir.mkdir();
-		for(String filePath : filePaths){
-			filePath = filePath.replace(App.repository_location,"");
-			repository.getFile(filePath, revision, fileProperties, content);
-		    File file = new File(App.tmp_location + "/" + revision + filePath);
-		    File dir = new File(file.getParent());
-		    if(!dir.exists()) dir.mkdirs();
-		    try {
-				PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
-				pw.write(content.toString());
-				pw.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
 		}
 	}
 }

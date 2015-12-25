@@ -1,45 +1,43 @@
 package binding;
 
-
 public class Binding {
-	String invocationFilePath;
-	String invocationClassName;
-	String invocationMethodName;
-	String declarationFilePath;
-	String declarationClassName;
-	String declarationMethodName;
+	String invocationClass;
+	String invocationMethod;
+	String declarationClass;
+	String declarationMethod;
 
-	public Binding(String invocationFilePath, String invocationClassName, String invocationMethodName,
-			String declarationFilePath, String declarationClassName, String declarationMethodName) {
-		this.invocationFilePath = invocationFilePath;
-		this.invocationClassName = invocationClassName;
-		this.invocationMethodName = invocationMethodName;
-		this.declarationFilePath = declarationFilePath;
-		this.declarationClassName = declarationClassName;
-		this.declarationMethodName = declarationMethodName;
+	public Binding() {
 	}
 
-	public String getInvocationFilePath() {
-		return invocationFilePath;
+	public String getInvocationClass() {
+		return invocationClass;
 	}
 
-	public String getInvocationClassName() {
-		return invocationClassName;
+	public String getInvocationMethod() {
+		return invocationMethod;
 	}
 
-	public String getInvocationMethodName() {
-		return invocationMethodName;
+	public String getDeclarationClass() {
+		return declarationClass;
 	}
 
-	public String getDeclarationFilePath() {
-		return declarationFilePath;
+	public String getDeclarationMethod() {
+		return declarationMethod;
 	}
 
-	public String getDeclarationClassName() {
-		return declarationClassName;
+	public void setInvocationClass(String invocationClass) {
+		this.invocationClass = invocationClass;
 	}
 
-	public String getDeclarationMethodName() {
-		return declarationMethodName;
+	public void setInvocationMethod(String invocationMethod) {
+		this.invocationMethod = invocationMethod;
+	}
+
+	public void setDeclarationClass(String declarationClass) {
+		this.declarationClass = declarationClass;
+	}
+
+	public void setDeclarationMethod(String declarationMethod) {
+		this.declarationMethod = declarationMethod;
 	}
 }

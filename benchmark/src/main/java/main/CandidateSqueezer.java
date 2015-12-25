@@ -12,6 +12,7 @@ import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.io.SVNRepository;
 
 import similarity.SimilarityCalculator;
+import binding.BindingDetector;
 import database.Query;
 import fragmentdetector.CodeFragment;
 import fragmentdetector.CodeFragmentDetector;
@@ -37,6 +38,7 @@ public class CandidateSqueezer {
 		Statement statement_after_fix = null;
 		Statement statement_link = null;
 		Statement statement_candidate = null;
+		Statement statement_binding = null;
 
 		List<CodeFragment> list_delete = new ArrayList<CodeFragment>();
 		List<CodeFragment> list_add = new ArrayList<CodeFragment>();
@@ -81,56 +83,46 @@ public class CandidateSqueezer {
 
 				System.out.println("revision " + current_revision_num + " mining start.");
 				//削除されたメソッドを特定
-				if(result_delete != null){
-					while(result_delete.next()){
-						codeFragment = codeFragmentDetector.execute(repository,
-								result_delete.getString(5),Long.parseLong(result_delete.getString(8)),
-								Integer.parseInt(result_delete.getString(6)),Integer.parseInt(result_delete.getString(7)),
-								Integer.parseInt(result_delete.getString(1)));
-						if(codeFragment != null) list_delete.add(codeFragment);
-					}
+				while(result_delete.next()){
+					codeFragment = codeFragmentDetector.execute(repository,
+							result_delete.getString(5),Long.parseLong(result_delete.getString(8)),
+							Integer.parseInt(result_delete.getString(6)),Integer.parseInt(result_delete.getString(7)),
+							Integer.parseInt(result_delete.getString(1)));
+					if(codeFragment != null) list_delete.add(codeFragment);
 				}
 
 				//追加されたメソッドを特定
-				if(result_add != null){
-					while(result_add.next()){
-						codeFragment = codeFragmentDetector.execute(repository,
-								result_add.getString(5),Long.parseLong(result_add.getString(8)),
-								Integer.parseInt(result_add.getString(6)),Integer.parseInt(result_add.getString(7)),
-								Integer.parseInt(result_add.getString(1)));
-						if(codeFragment != null) list_add.add(codeFragment);
-					}
+				while(result_add.next()){
+					codeFragment = codeFragmentDetector.execute(repository,
+							result_add.getString(5),Long.parseLong(result_add.getString(8)),
+							Integer.parseInt(result_add.getString(6)),Integer.parseInt(result_add.getString(7)),
+							Integer.parseInt(result_add.getString(1)));
+					if(codeFragment != null) list_add.add(codeFragment);
 				}
 
 				//修正前のメソッドを特定
-				if(result_before_fix != null){
-					while(result_before_fix.next()){
-						codeFragment = codeFragmentDetector.execute(repository,
-								result_before_fix.getString(5),Long.parseLong(result_before_fix.getString(8)),
-								Integer.parseInt(result_before_fix.getString(6)),Integer.parseInt(result_before_fix.getString(7)),
-								Integer.parseInt(result_before_fix.getString(1)));
-						if(codeFragment != null) list_before_fix.add(codeFragment);
-					}
+				while(result_before_fix.next()){
+					codeFragment = codeFragmentDetector.execute(repository,
+							result_before_fix.getString(5),Long.parseLong(result_before_fix.getString(8)),
+							Integer.parseInt(result_before_fix.getString(6)),Integer.parseInt(result_before_fix.getString(7)),
+							Integer.parseInt(result_before_fix.getString(1)));
+					if(codeFragment != null) list_before_fix.add(codeFragment);
 				}
 
 				//修正後のメソッドを特定
-				if(result_after_fix != null){
-					while(result_after_fix.next()){
-						codeFragment = codeFragmentDetector.execute(repository,
-								result_after_fix.getString(5),Long.parseLong(result_after_fix.getString(8)),
-								Integer.parseInt(result_after_fix.getString(6)),Integer.parseInt(result_after_fix.getString(7)),
-								Integer.parseInt(result_after_fix.getString(1)));
-						if(codeFragment != null) list_after_fix.add(codeFragment);
-					}
+				while(result_after_fix.next()){
+					codeFragment = codeFragmentDetector.execute(repository,
+							result_after_fix.getString(5),Long.parseLong(result_after_fix.getString(8)),
+							Integer.parseInt(result_after_fix.getString(6)),Integer.parseInt(result_after_fix.getString(7)),
+							Integer.parseInt(result_after_fix.getString(1)));
+					if(codeFragment != null) list_after_fix.add(codeFragment);
 				}
 
 				//修正前と修正後のコード片IDを取得
-				if(result_link != null){
-					while(result_link.next()){
-						CodeFragmentLink codeFragmentLink = new CodeFragmentLink(
-									Long.parseLong(result_link.getString(1)), Long.parseLong(result_link.getString(2)));
-						list_link.add(codeFragmentLink);
-					}
+				while(result_link.next()){
+					CodeFragmentLink codeFragmentLink = new CodeFragmentLink(
+								Long.parseLong(result_link.getString(1)), Long.parseLong(result_link.getString(2)));
+					list_link.add(codeFragmentLink);
 				}
 				System.out.println("revision " + current_revision_num + " mining finished.");
 
@@ -140,6 +132,17 @@ public class CandidateSqueezer {
 				calculateSimilarity.execute(current_revision_num,statement_candidate);
 				System.out.println("revision " + current_revision_num + " calculate similarity finished.");
 
+				//メソッド呼び出し関係を考慮
+				statement_binding = connection.createStatement();
+				String sql_binding = query.binding(current_revision_num);
+				ResultSet result_binding = statement_binding.executeQuery(sql_binding);
+				if(result_binding.next()){
+					result_binding = statement_binding.executeQuery(sql_binding);
+					System.out.println("revision " + current_revision_num + " binding start.");
+					BindingDetector bindingDetector = new BindingDetector(repository, current_revision_num, result_binding);
+					bindingDetector.execute();
+					System.out.println("revision " + current_revision_num + " binding end.");
+				}
 				//後処理
 				list_delete.clear();
 				list_add.clear();
@@ -157,7 +160,9 @@ public class CandidateSqueezer {
 				if (statement_add != null) statement_add.close();
 				if (statement_before_fix != null) statement_before_fix.close();
 				if (statement_after_fix != null) statement_after_fix.close();
+				if (statement_link != null) statement_link.close();
 				if (statement_candidate != null) statement_candidate.close();
+				if (statement_binding != null) statement_binding.close();
 				if (connection != null) connection.close();
 			} catch (SQLException e) {
 				System.err.println(e);
