@@ -137,9 +137,22 @@ public class CandidateSqueezer {
 				String sql_binding = query.binding(current_revision_num);
 				ResultSet result_binding = statement_binding.executeQuery(sql_binding);
 				if(result_binding.next()){
+					//REVISION_IDENTIFIERの取得
+					long after_revision = result_binding.getLong(7);
+					long before_revision = 0;
+					while(result_binding.next()){
+						before_revision = result_binding.getLong(7);
+						if(before_revision != after_revision) break;
+					}
+					if(before_revision > after_revision){
+						long tmp = before_revision;
+						before_revision = after_revision;
+						after_revision = tmp;
+					}
+					//binding
 					result_binding = statement_binding.executeQuery(sql_binding);
 					System.out.println("revision " + current_revision_num + " binding start.");
-					BindingDetector bindingDetector = new BindingDetector(repository, current_revision_num, result_binding);
+					BindingDetector bindingDetector = new BindingDetector(repository, before_revision, after_revision, result_binding);
 					bindingDetector.execute();
 					System.out.println("revision " + current_revision_num + " binding end.");
 				}

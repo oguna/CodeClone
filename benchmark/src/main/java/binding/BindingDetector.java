@@ -31,20 +31,24 @@ import org.tmatesoft.svn.core.wc.SVNRevision;
 
 public class BindingDetector {
 	SVNRepository repository;
-	long revision;
+	long before_revision;
+	long after_revision;
 	ResultSet result_binding;
 
-	public BindingDetector(SVNRepository repository, long revision, ResultSet result_binding) {
+	public BindingDetector(SVNRepository repository, long before_revision, long after_revision, ResultSet result_binding) {
 		this.repository = repository;
-		this.revision = revision;
+		this.before_revision = before_revision;
+		this.after_revision = after_revision;
 		this.result_binding = result_binding;
 	}
 
-	public void execute(){
+	public void execute() {
+		List<Binding> beforeBinding = getBindings(before_revision);
+		List<Binding> afterBinding = getBindings(after_revision);
 
 	}
 
-	private List<Binding> getBindings() throws SVNException{
+	private List<Binding> getBindings(long revision) {
 		ASTParser parser = ASTParser.newParser(AST.JLS8);
 		final Map<String, String> options = JavaCore.getOptions();
 		JavaCore.setComplianceOptions(JavaCore.VERSION_1_8, options);
@@ -54,7 +58,8 @@ public class BindingDetector {
 		parser.setBindingsRecovery(true);
 		parser.setStatementsRecovery(true);
 		String[] keys = new String[] {};
-		List<String> filePaths = checkOutFiles();
+
+		List<String> filePaths = checkOutFiles(revision);
 		String[] sources = filePaths.toArray(new String[0]);
 		String[] classpathEntries = {};
 		String[] sourcepathEntries = {};
@@ -65,23 +70,25 @@ public class BindingDetector {
 		return binds;
 	}
 
-	private List<String> checkOutFiles() throws SVNException{
+	private List<String> checkOutFiles(long revision) {
 		List<String> sources = new ArrayList<String>();
-		List<String> filePaths = getFilePath();
+		List<String> filePaths = getFilePath(revision);
 		SVNProperties fileProperties = new SVNProperties();
 		OutputStream content = new ByteArrayOutputStream ();
 		File checkOutDir = new File(App.tmp_location + "/" + revision);
 		checkOutDir.mkdir();
 		for(String filePath : filePaths){
 			filePath = filePath.replace(App.repository_location,"");
-			repository.getFile(filePath, revision, fileProperties, content);
-		    File file = new File(App.tmp_location + "/" + revision + filePath);
-		    File dir = new File(file.getParent());
-		    if(!dir.exists()) dir.mkdirs();
-		    try {
-				PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
+			try {
+				repository.getFile(filePath, revision, fileProperties, content);
+				File file = new File(App.tmp_location + "/" + revision + filePath);
+			    File dir = new File(file.getParent());
+			    if(!dir.exists()) dir.mkdirs();
+			    PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(file)));
 				pw.write(content.toString());
 				pw.close();
+			} catch (SVNException e) {
+				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -90,7 +97,7 @@ public class BindingDetector {
 		return sources;
 	}
 
-	private List<String> getFilePath() {
+	private List<String> getFilePath(long revision) {
 		try {
 			SVNURL svnURL = SVNURL.parseURIEncoded(App.repository_location);
 			ISVNAuthenticationManager authManager = null;
