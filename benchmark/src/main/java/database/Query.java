@@ -33,6 +33,7 @@ public class Query {
 				+ ")"
 				+ "where CODE_FRAGMENT_GENEALOGY.END_COMBINED_REVISION_ID = "
 				+ i + " AND CODE_FRAGMENT.END_COMBINED_REVISION_ID = " + i;
+				//+" AND (CODE_FRAGMENT.END_LINE - CODE_FRAGMENT.START_LINE + 1) > 5";
 		return sql_delete;
 	}
 
@@ -65,6 +66,7 @@ public class Query {
 				+ ")"
 				+ "where CODE_FRAGMENT_GENEALOGY.START_COMBINED_REVISION_ID = "
 				+ i + 1 + " AND CODE_FRAGMENT.START_COMBINED_REVISION_ID = " + i + 1;
+				//+" AND (CODE_FRAGMENT.END_LINE - CODE_FRAGMENT.START_LINE + 1) > 5";
 		return sql_add;
 	}
 
@@ -96,6 +98,7 @@ public class Query {
 					+ " ON CODE_FRAGMENT_LINK.BEFORE_COMBINED_REVISION_ID = REVISION.REVISION_ID"
 				+ ")"
 				+ "where CODE_FRAGMENT_LINK.BEFORE_COMBINED_REVISION_ID = " + i;
+				//+" AND (CODE_FRAGMENT.END_LINE - CODE_FRAGMENT.START_LINE + 1) > 5";
 		return sql_before_fix;
 	}
 
@@ -127,6 +130,7 @@ public class Query {
 					+ " ON CODE_FRAGMENT_LINK.AFTER_COMBINED_REVISION_ID = REVISION.REVISION_ID"
 				+ ")"
 				+ "where CODE_FRAGMENT_LINK.AFTER_COMBINED_REVISION_ID = " + (i+1);
+				//+" AND (CODE_FRAGMENT.END_LINE - CODE_FRAGMENT.START_LINE + 1) > 5";
 		return sql_after_fix;
 	}
 

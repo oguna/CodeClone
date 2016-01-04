@@ -21,6 +21,8 @@ public class NormalizedStringCreator {
 
 	final List<String> reservedWord = new ArrayList<String>();
 	String sourceCode;
+/*	private final static int minLines = 6;
+	private final static int minTokens = 50;*/
 
 	public NormalizedStringCreator (String sourceCode) {
 		this.sourceCode = sourceCode;
@@ -44,6 +46,11 @@ public class NormalizedStringCreator {
 				else startLine = unit.getLineNumber(node.getName().getStartPosition());
 				int endLine = unit.getLineNumber(node.getStartPosition()+ node.getLength());
 				if(start != startLine || end != endLine) return super.visit(node);
+
+/*				int javadocLine;
+				if(node.getJavadoc() != null) javadocLine = unit.getLineNumber(node.getJavadoc().getLength());
+				else javadocLine = 0;
+				if(endLine - startLine + 1 - javadocLine < minLines) return super.visit(node);*/
 
 				Scanner scanner = new Scanner();
 				scanner.setSource(node.toString().toCharArray());
@@ -69,6 +76,7 @@ public class NormalizedStringCreator {
 				return super.visit(node);
 			}
 		});
+		//if(tokens.size() < minTokens) return null;
 		return tokens;
 	}
 }
