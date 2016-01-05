@@ -17,6 +17,18 @@ public class App {
 	public final static String tmp_location = "F:/tmp";
 	public final static int endRevision = 1507;
 
+	/* バージョン管理，言語の制限
+	 * SVN
+	 * Java
+	 * trunkのみ
+	 */
+	/*
+	 * クローンの制限
+	 * メソッドのみ
+	 * 6行以上
+	 * 50トークン未満
+	 */
+
 	public static void main(String[] args) throws SVNException {
 		long start = System.currentTimeMillis();
 		RepositoryRegister registerRepository = new RepositoryRegister();

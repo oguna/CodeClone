@@ -21,8 +21,8 @@ public class Requestor extends FileASTRequestor {
 	@Override
 	public void acceptAST(String path, CompilationUnit unit) {
 		unit.accept(new ASTVisitor (){
-			private TypeDeclaration nodeClass;
-			private MethodDeclaration nodeMethod;
+			private TypeDeclaration nodeClass = null;;
+			private MethodDeclaration nodeMethod = null;
 
 			@Override
 			public boolean visit(TypeDeclaration node){
@@ -44,6 +44,7 @@ public class Requestor extends FileASTRequestor {
 					bind.setDeclarationClass(b.getDeclaringClass().getQualifiedName());
 					bind.setDeclarationMethod(b.getName());
 					binds.add(bind);
+					bind = null;
 				}
 				return super.visit(node);
 			}
