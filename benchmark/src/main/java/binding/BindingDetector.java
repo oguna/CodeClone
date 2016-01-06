@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,50 +39,106 @@ public class BindingDetector {
 	SVNRepository repository;
 	long before_revision;
 	long after_revision;
-	ResultSet result_binding;
+	ResultSet result_binding_before;
+	ResultSet result_binding_after;
+	Statement statement_oracle;
 
-	public BindingDetector(SVNRepository repository, long before_revision, long after_revision, ResultSet result_binding) {
+	public BindingDetector(SVNRepository repository, long before_revision, long after_revision,
+			ResultSet result_binding_before, ResultSet result_binding_after, Statement statement_oracle) {
 		this.repository = repository;
 		this.before_revision = before_revision;
 		this.after_revision = after_revision;
-		this.result_binding = result_binding;
+		this.result_binding_before = result_binding_before;
+		this.result_binding_after = result_binding_after;
+		this.statement_oracle = statement_oracle;
 	}
 
 	public void execute() {
-		List<Candidate> beforeCandidates = getCandidates(before_revision);
-		List<Candidate> afterCandidates = getCandidates(after_revision);
+		List<Candidate> beforeCandidates = getCandidates(before_revision, result_binding_before);
+		List<Candidate> afterCandidates = getCandidates(after_revision, result_binding_after);
 		List<Binding> beforeBindings = getBindings(before_revision);
 		List<Binding> afterBindings = getBindings(after_revision);
 
 		for(Candidate afterCandidate : afterCandidates){
-			int id = afterCandidate.getId();
+			long id = afterCandidate.getId();
+			List<Candidate> oracles = new ArrayList<Candidate>();
 			//after_fixとaddメソッドの呼び出し箇所を把握
-			List<Binding> afterInvocations = new ArrayList<Binding>();
+			List<Binding> afterInvokers = new ArrayList<Binding>();
 			for(Binding afterBinding : afterBindings){
-				if(afterBinding.getDeclarationClass().equals(afterCandidate.getDeclarationClass())
-					&& afterBinding.getDeclarationMethod().equals(afterCandidate.getDeclarationMethod())){
-					afterInvocations.add(afterBinding);
+				if(afterBinding.getTargetClass().equals(afterCandidate.getTargetClass())
+					&& afterBinding.getTargetMethod().equals(afterCandidate.getTargetMethod())){
+					afterInvokers.add(afterBinding);
 				}
 			}
 			//before_fixとdeleteメソッドの呼び出し箇所を把握
 			for(Candidate beforeCandidate : beforeCandidates){
 				if(beforeCandidate.getId() == id){
-					for(Binding afterInvocation : afterInvocations){
-
+					List<Binding> beforeInvokers = new ArrayList<Binding>();
+					for(Binding beforeBinding : beforeBindings){
+						if(beforeBinding.getTargetClass().equals(beforeCandidate.getTargetClass())
+							&& beforeBinding.getTargetMethod().equals(beforeCandidate.getTargetMethod())){
+							beforeInvokers.add(beforeBinding);
+						}
+					}
+					for(Binding beforeInvoker : beforeInvokers){
+						int flag = 0;
+						for(Binding afterInvoker : afterInvokers){
+							if(beforeInvoker.getInvokeClass().equals(afterInvoker.getInvokeClass())
+								&& beforeInvoker.getInvokeMethod().equals(afterInvoker.getInvokeMethod())){
+									oracles.add(beforeCandidate);
+									flag = 1;
+									break;
+							}
+						}
+						if(flag == 1) break;
 					}
 				}
 			}
+			if(oracles.size() > 1){
+				oracles.add(afterCandidate);
+				dbCreate(oracles);
+			}
+			oracles.clear();
 		}
-
-
-
 		beforeCandidates = null;
 		afterCandidates = null;
 		beforeBindings = null;
 		afterBindings = null;
 	}
 
-	private List<Candidate> getCandidates(long revision){
+	/**
+	 * 集約されたメソッドをデータベースに登録
+	 * @param oracles
+	 */
+	private void dbCreate(List<Candidate> oracles){
+		try {
+			for(Candidate oracle : oracles)
+				statement_oracle.execute(insertValues(oracle));
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * データベース登録クエリの生成
+	 * @return insert
+	 */
+	private String insertValues(Candidate oracle) {
+		String insert = "insert into ORACLE values ("
+				+ oracle.getId() + "," + oracle.getCodeFragmentId() + ","
+				+ oracle.getRevision() + "," + "\"" + oracle.getProcess()+ "\","
+				+ "\"" + oracle.getRepositoryRootURL()+ "\"," + "\"" + oracle.getFilePath()+ "\","
+				+ oracle.getRevisionIdentifier() + "," + oracle.getStart() + "," + oracle.getEnd() +")";
+		return insert;
+	}
+
+	/**
+	 * 集約されたメソッドの候補をデータベースから取得
+	 * @param revision
+	 * @return
+	 * @throws SQLException
+	 */
+	private List<Candidate> getCandidates(long revision, ResultSet result_binding) {
 		List<Candidate> candidates = new ArrayList<Candidate>();
 		try {
 			while(result_binding.next()){
@@ -90,7 +147,14 @@ public class BindingDetector {
 					Candidate candidate = getPackageMethod(result_binding.getString(6),
 							result_binding.getLong(7), result_binding.getLong(8), result_binding.getLong(9));
 					candidate.setId(result_binding.getInt(1));
+					candidate.setCodeFragmentId(result_binding.getLong(2));
+					candidate.setRevision(result_binding.getLong(3));
 					candidate.setProcess(result_binding.getString(4));
+					candidate.setRepositoryRootURL(result_binding.getString(5));
+					candidate.setFilePath(result_binding.getString(6));
+					candidate.setRevisionIdentifier(result_binding.getLong(7));
+					candidate.setStart(result_binding.getLong(8));
+					candidate.setEnd(result_binding.getLong(9));
 					candidates.add(candidate);
 				}
 			}
@@ -100,6 +164,14 @@ public class BindingDetector {
 		return candidates;
 	}
 
+	/**
+	 * 集約されたメソッドの候補が存在するパッケージ名，クラス名，メソッド名を取得
+	 * @param filePath
+	 * @param revision
+	 * @param start
+	 * @param end
+	 * @return
+	 */
 	private Candidate getPackageMethod(String filePath, long revision, long start, long end){
 		Candidate candidate = new Candidate();
 		try {
@@ -128,8 +200,8 @@ public class BindingDetector {
 					int endLine = unit.getLineNumber(node.getStartPosition()+ node.getLength());
 					if(start != startLine || end != endLine) return super.visit(node);
 
-					candidate.setDeclarationClass(unit.getPackage().getName().toString() + "." + nodeClass.getName().toString());
-					candidate.setDeclarationMethod(node.getName().toString());
+					candidate.setTargetClass(unit.getPackage().getName().toString() + "." + nodeClass.getName().toString());
+					candidate.setTargetMethod(node.getName().toString());
 					return super.visit(node);
 				}
 			});
@@ -139,6 +211,13 @@ public class BindingDetector {
 		return candidate;
 	}
 
+	/**
+	 * revisionのbindingを取得
+	 * 呼び出す側のパッケージ名，クラス名，メソッド名
+	 * 呼び出される側のパッケージ名，クラス名，メソッド名
+	 * @param revision
+	 * @return
+	 */
 	private List<Binding> getBindings(long revision) {
 		ASTParser parser = ASTParser.newParser(AST.JLS8);
 		final Map<String, String> options = JavaCore.getOptions();
@@ -161,20 +240,27 @@ public class BindingDetector {
 		return binds;
 	}
 
+	/**
+	 * revisionのソースコードをチェックアウト
+	 * @param revision
+	 * @return
+	 */
 	private List<String> checkOutFiles(long revision) {
 		List<String> sources = new ArrayList<String>();
 		List<String> filePaths = getFilePath(revision);
 		SVNProperties fileProperties = new SVNProperties();
-		OutputStream content = new ByteArrayOutputStream ();
 		File checkOutDir = new File(App.tmp_location + "/" + revision);
 		if(checkOutDir.exists()){
-			for(String filePath : filePaths)
+			for(String filePath : filePaths){
+				filePath = filePath.replace(App.repository_location,"");
 				sources.add(App.tmp_location + "/" + revision + filePath);
+			}
 		}else {
 			checkOutDir.mkdir();
 			for(String filePath : filePaths){
 				filePath = filePath.replace(App.repository_location,"");
 				try {
+					OutputStream content = new ByteArrayOutputStream ();
 					repository.getFile(filePath, revision, fileProperties, content);
 					File file = new File(App.tmp_location + "/" + revision + filePath);
 				    File dir = new File(file.getParent());
@@ -193,6 +279,11 @@ public class BindingDetector {
 		return sources;
 	}
 
+	/**
+	 * revisionに存在するjavaファイルのリストを取得
+	 * @param revision
+	 * @return
+	 */
 	private List<String> getFilePath(long revision) {
 		try {
 			SVNURL svnURL = SVNURL.parseURIEncoded(App.repository_location);

@@ -21,8 +21,8 @@ public class Requestor extends FileASTRequestor {
 	@Override
 	public void acceptAST(String path, CompilationUnit unit) {
 		unit.accept(new ASTVisitor (){
-			private TypeDeclaration nodeClass = null;;
-			private MethodDeclaration nodeMethod = null;
+			private TypeDeclaration nodeClass;
+			private MethodDeclaration nodeMethod;
 
 			@Override
 			public boolean visit(TypeDeclaration node){
@@ -39,12 +39,15 @@ public class Requestor extends FileASTRequestor {
 				IMethodBinding b = node.resolveMethodBinding();
 				if(b != null){
 					Binding bind = new Binding();
-					bind.setInvocationClass(unit.getPackage().getName().toString() + "." + nodeClass.getName().toString());
-					bind.setInvocationMethod(nodeMethod.getName().toString());
-					bind.setDeclarationClass(b.getDeclaringClass().getQualifiedName());
-					bind.setDeclarationMethod(b.getName());
-					binds.add(bind);
-					bind = null;
+					if(unit.getPackage() != null){
+						if(nodeClass != null) bind.setInvokeClass(unit.getPackage().getName().toString() + "." + nodeClass.getName().toString());
+						else bind.setInvokeClass(null);
+						if(nodeMethod != null) bind.setInvokeMethod(nodeMethod.getName().toString());
+						else bind.setInvokeMethod(null);
+						bind.setTargetClass(b.getDeclaringClass().getQualifiedName());
+						bind.setTargetMethod(b.getName());
+						binds.add(bind);
+					}
 				}
 				return super.visit(node);
 			}

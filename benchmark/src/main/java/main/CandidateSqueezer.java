@@ -38,7 +38,9 @@ public class CandidateSqueezer {
 		Statement statement_after_fix = null;
 		Statement statement_link = null;
 		Statement statement_candidate = null;
-		Statement statement_binding = null;
+		Statement statement_binding_before = null;
+		Statement statement_binding_after = null;
+		Statement statement_oracle = null;
 
 		List<CodeFragment> list_delete = new ArrayList<CodeFragment>();
 		List<CodeFragment> list_add = new ArrayList<CodeFragment>();
@@ -62,6 +64,13 @@ public class CandidateSqueezer {
 			ResultSet result_candidate = statement_candidate.executeQuery("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='CANDIDATE';");
 			if(result_candidate.getInt(1) != 0) statement_candidate.executeUpdate("drop table CANDIDATE");
 			statement_candidate.executeUpdate("create table CANDIDATE(ID integer , CODE_FRAGMENT_ID integer , REVISION integer , PROCESS string)");
+
+			//集約されたメソッドの情報を格納するテーブルを作成
+			statement_oracle = connection.createStatement();
+			ResultSet result_oracle = statement_oracle.executeQuery("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ORACLE';");
+			if(result_oracle.getInt(1) != 0) statement_oracle.executeUpdate("drop table ORACLE");
+			statement_oracle.executeUpdate("create table ORACLE(ID integer , CODE_FRAGMENT_ID integer , REVISION integer , PROCESS string, "
+																+ "REPOSITORY_ROOT_URL string, FILE_PATH string, REVISION_IDENTIFIER integer, START_LINE integer, END_LINE integer)");
 
 			int current_revision_num = 1;
 			while(current_revision_num<App.endRevision){
@@ -133,15 +142,16 @@ public class CandidateSqueezer {
 				System.out.println("revision " + current_revision_num + " calculate similarity finished.");
 
 				//メソッド呼び出し関係を考慮
-				statement_binding = connection.createStatement();
+				statement_binding_before = connection.createStatement();
+				statement_binding_after = connection.createStatement();
 				String sql_binding = query.binding(current_revision_num);
-				ResultSet result_binding = statement_binding.executeQuery(sql_binding);
-				if(result_binding.next()){
+				ResultSet result_binding_before = statement_binding_before.executeQuery(sql_binding);
+				if(result_binding_before.next()){
 					//REVISION_IDENTIFIERの取得
-					long after_revision = result_binding.getLong(7);
+					long after_revision = result_binding_before.getLong(7);
 					long before_revision = 0;
-					while(result_binding.next()){
-						before_revision = result_binding.getLong(7);
+					while(result_binding_before.next()){
+						before_revision = result_binding_before.getLong(7);
 						if(before_revision != after_revision) break;
 					}
 					if(before_revision > after_revision){
@@ -150,9 +160,10 @@ public class CandidateSqueezer {
 						after_revision = tmp;
 					}
 					//binding
-					result_binding = statement_binding.executeQuery(sql_binding);
+					result_binding_before = statement_binding_before.executeQuery(sql_binding);
+					ResultSet result_binding_after = statement_binding_after.executeQuery(sql_binding);
 					System.out.println("revision " + current_revision_num + " binding start.");
-					BindingDetector bindingDetector = new BindingDetector(repository, before_revision, after_revision, result_binding);
+					BindingDetector bindingDetector = new BindingDetector(repository, before_revision, after_revision, result_binding_before, result_binding_after, statement_oracle);
 					bindingDetector.execute();
 					System.out.println("revision " + current_revision_num + " binding end.");
 				}
@@ -175,7 +186,9 @@ public class CandidateSqueezer {
 				if (statement_after_fix != null) statement_after_fix.close();
 				if (statement_link != null) statement_link.close();
 				if (statement_candidate != null) statement_candidate.close();
-				if (statement_binding != null) statement_binding.close();
+				if (statement_binding_before != null) statement_binding_before.close();
+				if(statement_binding_after != null)statement_binding_after.close();
+				if (statement_oracle != null) statement_oracle.close();
 				if (connection != null) connection.close();
 			} catch (SQLException e) {
 				System.err.println(e);
