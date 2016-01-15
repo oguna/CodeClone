@@ -1,11 +1,5 @@
 package similarity;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -20,7 +14,6 @@ import fragmentdetector.CodeFragmentLink;
  *
  */
 public class SimilarityCalculator {
-
 	private final static int n = 3;
 	private final static double threshold = 0.7;
 	List<CodeFragment> list_delete;
@@ -43,43 +36,33 @@ public class SimilarityCalculator {
 
 		// 削除されたメソッドをN-gram化
 		for (CodeFragment codeFragment : list_delete) {
-			List<String> ngramContent = createNgram(
-					codeFragment.getNormalizeContent(), n);
+			List<String> ngramContent = createNgram(codeFragment.getNormalizeContent(), n);
 			codeFragment.setNgramContent(ngramContent);
 		}
 
 		// 修正前のメソッドをN-gram化
 		for (CodeFragment codeFragment : list_before_fix) {
-			List<String> ngramContent = createNgram(
-					codeFragment.getNormalizeContent(), n);
+			List<String> ngramContent = createNgram(codeFragment.getNormalizeContent(), n);
 			codeFragment.setNgramContent(ngramContent);
 		}
 
 		// 集約されたメソッドを特定 {削除(複数) => 追加}
 		for (CodeFragment add_codeFragment : list_add) {
 			// 追加されたメソッドをN-gram化
-			List<String> add_ngramContent = createNgram(
-					add_codeFragment.getNormalizeContent(), n);
+			List<String> add_ngramContent = createNgram(add_codeFragment.getNormalizeContent(), n);
 			List<Integer> delete_count = new ArrayList<Integer>();
 
 			// 削除されたメソッドと類似度を比較
-			;
 			for (int i = 0; i < list_delete.size(); i++) {
 				CodeFragment delete_codeFragment = list_delete.get(i);
-				List<String> delete_ngramContent = delete_codeFragment
-						.getNgramContent();
-				boolean similar = similarityCompare(add_ngramContent,
-						delete_ngramContent);
-				if (similar)
-					delete_count.add(i);
+				List<String> delete_ngramContent = delete_codeFragment.getNgramContent();
+				boolean similar = similarityCompare(add_ngramContent, delete_ngramContent);
+				if (similar) delete_count.add(i);
 			}
 
 			// 複数存在すれば，集約と決定
 			if (delete_count.size() > 1) {
-				dbCreate(statement, delete_count, add_codeFragment,
-						current_revision_num);
-				file_writer(delete_count, add_codeFragment,
-						current_revision_num);
+				dbCreate(statement, delete_count, add_codeFragment, current_revision_num);
 				CandidateSqueezer.candidateCount++;
 			}
 			delete_count.clear();
@@ -88,38 +71,28 @@ public class SimilarityCalculator {
 		// 集約されたメソッドを特定 {削除(複数)+修正前 => 修正後}
 		for (CodeFragment after_fix_codeFragment : list_after_fix) {
 			// 修正後のメソッドをN-gram化
-			List<String> after_fix_ngramContent = createNgram(
-					after_fix_codeFragment.getNormalizeContent(), n);
+			List<String> after_fix_ngramContent = createNgram(after_fix_codeFragment.getNormalizeContent(), n);
 			int before_fix_count = 0;
 			List<Integer> delete_count = new ArrayList<Integer>();
 
 			// 修正前のメソッドと類似度を比較
 			CodeFragment before_fix_codeFragment = searchBeforeCode(after_fix_codeFragment);
-			if (before_fix_codeFragment == null)
-				continue;
-			boolean similar = similarityCompare(after_fix_ngramContent,
-					before_fix_codeFragment.getNgramContent());
-			if (similar)
-				before_fix_count++;
+			if (before_fix_codeFragment == null) continue;
+			boolean similar = similarityCompare(after_fix_ngramContent,before_fix_codeFragment.getNgramContent());
+			if (similar) before_fix_count++;
 
 			// 削除されたメソッドと類似度を比較
 			for (int i = 0; i < list_delete.size(); i++) {
 				CodeFragment delete_codeFragment = list_delete.get(i);
-				List<String> delete_ngramContent = delete_codeFragment
-						.getNgramContent();
-				similar = similarityCompare(after_fix_ngramContent,
-						delete_ngramContent);
-				if (similar)
-					delete_count.add(i);
+				List<String> delete_ngramContent = delete_codeFragment.getNgramContent();
+				similar = similarityCompare(after_fix_ngramContent,delete_ngramContent);
+				if (similar) delete_count.add(i);
 			}
 
 			// 複数存在すれば，集約と決定
 			if (delete_count.size() > 0 && before_fix_count == 1) {
-				dbCreate2(statement, after_fix_codeFragment,
-						before_fix_codeFragment, delete_count,
-						current_revision_num);
-				file_writer2(after_fix_codeFragment, before_fix_codeFragment,
-						delete_count, current_revision_num);
+				dbCreate2(statement, after_fix_codeFragment, before_fix_codeFragment,
+								delete_count,current_revision_num);
 				CandidateSqueezer.candidateCount++;
 			}
 			delete_count.clear();
@@ -258,64 +231,5 @@ public class SimilarityCalculator {
 				+ CandidateSqueezer.candidateCount + "," + codeFragment.getId()
 				+ "," + current_revision_num + "," + "\"" + process + "\")";
 		return insert;
-	}
-
-	/*
-	 *
-	 * いったんファイル生成
-	 */
-	private void file_writer(List<Integer> delete_count,
-			CodeFragment add_codeFragment, int current_revision_num) {
-		try {
-			File file = new File("F:/tmp/" + current_revision_num + "_"
-					+ add_codeFragment.getId() + ".txt");
-			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(
-					file)));
-			pw.println("add_sourcecode");
-			pw.println(add_codeFragment.getId());
-			pw.println(add_codeFragment.getContent());
-			pw.println("::::::::::::::::::::::::::::::::::::::::::::::::::::::");
-			pw.println("delete_sourcecode");
-			for (int i = 0; i < delete_count.size(); i++) {
-				pw.println(list_delete.get(delete_count.get(i)).getId());
-				pw.println(list_delete.get(delete_count.get(i)).getContent());
-				pw.println("::::::::::::::::::::::::::::::::::::::::::::::::::::::");
-			}
-			pw.close();
-		} catch (FileNotFoundException e) {
-			System.out.println(e);
-		} catch (IOException e) {
-			System.out.println(e);
-		}
-	}
-
-	private void file_writer2(CodeFragment after_fix_codeFragment,
-			CodeFragment before_fix_codeFragment, List<Integer> delete_count,
-			int current_revision_num) {
-		try {
-			File file = new File("F:/tmp/" + current_revision_num + "_"
-					+ after_fix_codeFragment.getId() + ".txt");
-			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(
-					file)));
-			pw.println("after_sourcecode");
-			pw.println(after_fix_codeFragment.getId());
-			pw.println(after_fix_codeFragment.getContent());
-			pw.println("::::::::::::::::::::::::::::::::::::::::::::::::::::::");
-			pw.println("before_fix_sourcecode");
-			pw.println(before_fix_codeFragment.getId());
-			pw.println(before_fix_codeFragment.getContent());
-			pw.println("::::::::::::::::::::::::::::::::::::::::::::::::::::::");
-			pw.println("delete_sourcecode");
-			for (int i = 0; i < delete_count.size(); i++) {
-				pw.println(list_delete.get(delete_count.get(i)).getId());
-				pw.println(list_delete.get(delete_count.get(i)).getContent());
-				pw.println("::::::::::::::::::::::::::::::::::::::::::::::::::::::");
-			}
-			pw.close();
-		} catch (FileNotFoundException e) {
-			System.out.println(e);
-		} catch (IOException e) {
-			System.out.println(e);
-		}
 	}
 }

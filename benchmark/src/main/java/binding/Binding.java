@@ -1,11 +1,17 @@
 package binding;
 
+/**
+ * @author y-yusuke
+ *
+ */
 public class Binding {
 	String invokeClass;
 	String invokeMethod;
 	String targetClass;
 	String targetMethod;
 
+	public Binding(){
+	}
 	public String getInvokeClass() {
 		return invokeClass;
 	}
@@ -30,6 +36,4 @@ public class Binding {
 	public void setTargetMethod(String targetMethod) {
 		this.targetMethod = targetMethod;
 	}
-
-
 }

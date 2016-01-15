@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.util.List;
 
+import main.App;
 import normalizer.NormalizedStringCreator;
 
 import org.tmatesoft.svn.core.SVNException;
@@ -35,9 +36,10 @@ public class CodeFragmentDetector {
 													int start, int end,long id) {
 		SVNNodeKind nodeKind;
 		try {
+			if(!App.repository_additional_location.equals("")) filePath = App.repository_additional_location + "/" +filePath;
 			nodeKind = repository.checkPath(filePath, current_revision_num);
 			if (nodeKind == SVNNodeKind.NONE || nodeKind == SVNNodeKind.DIR) {
-				System.err.println("Not found {revision:" + current_revision_num + " , filePath:" +filePath + " , range:" + start + "-" + end +"}.");
+				System.err.println("Not found {revision:" + current_revision_num + " , filePath:" + filePath + " , range:" + start + "-" + end +"}.");
 				return null;
 			}
 

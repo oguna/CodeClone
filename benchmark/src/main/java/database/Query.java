@@ -1,5 +1,9 @@
 package database;
 
+/**
+ * @author y-yusuke
+ *
+ */
 public class Query {
 	public Query() {
 	}

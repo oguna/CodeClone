@@ -11,6 +11,10 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 
+/**
+ * @author y-yusuke
+ *
+ */
 public class Requestor extends FileASTRequestor {
 	List<Binding> binds = new ArrayList<Binding>();
 
@@ -21,8 +25,8 @@ public class Requestor extends FileASTRequestor {
 	@Override
 	public void acceptAST(String path, CompilationUnit unit) {
 		unit.accept(new ASTVisitor (){
-			private TypeDeclaration nodeClass;
-			private MethodDeclaration nodeMethod;
+			private TypeDeclaration nodeClass = null;
+			private MethodDeclaration nodeMethod = null;
 
 			@Override
 			public boolean visit(TypeDeclaration node){

@@ -34,7 +34,10 @@ import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNLogClient;
 import org.tmatesoft.svn.core.wc.SVNRevision;
-
+/**
+ * @author y-yusuke
+ *
+ */
 public class BindingDetector {
 	SVNRepository repository;
 	long before_revision;
@@ -60,37 +63,34 @@ public class BindingDetector {
 		List<Binding> afterBindings = getBindings(after_revision);
 
 		for(Candidate afterCandidate : afterCandidates){
-			long id = afterCandidate.getId();
 			List<Candidate> oracles = new ArrayList<Candidate>();
 			//after_fixとaddメソッドの呼び出し箇所を把握
 			List<Binding> afterInvokers = new ArrayList<Binding>();
 			for(Binding afterBinding : afterBindings){
 				if(afterBinding.getTargetClass().equals(afterCandidate.getTargetClass())
-					&& afterBinding.getTargetMethod().equals(afterCandidate.getTargetMethod())){
+					&& afterBinding.getTargetMethod().equals(afterCandidate.getTargetMethod()))
 					afterInvokers.add(afterBinding);
-				}
 			}
 			//before_fixとdeleteメソッドの呼び出し箇所を把握
 			for(Candidate beforeCandidate : beforeCandidates){
-				if(beforeCandidate.getId() == id){
+				if(beforeCandidate.getId() == afterCandidate.getId()){
 					List<Binding> beforeInvokers = new ArrayList<Binding>();
 					for(Binding beforeBinding : beforeBindings){
 						if(beforeBinding.getTargetClass().equals(beforeCandidate.getTargetClass())
-							&& beforeBinding.getTargetMethod().equals(beforeCandidate.getTargetMethod())){
+							&& beforeBinding.getTargetMethod().equals(beforeCandidate.getTargetMethod()))
 							beforeInvokers.add(beforeBinding);
-						}
 					}
+					boolean flag = false;
 					for(Binding beforeInvoker : beforeInvokers){
-						int flag = 0;
 						for(Binding afterInvoker : afterInvokers){
 							if(beforeInvoker.getInvokeClass().equals(afterInvoker.getInvokeClass())
 								&& beforeInvoker.getInvokeMethod().equals(afterInvoker.getInvokeMethod())){
 									oracles.add(beforeCandidate);
-									flag = 1;
+									flag = true;
 									break;
 							}
 						}
-						if(flag == 1) break;
+						if(flag) break;
 					}
 				}
 			}
@@ -100,10 +100,6 @@ public class BindingDetector {
 			}
 			oracles.clear();
 		}
-		beforeCandidates = null;
-		afterCandidates = null;
-		beforeBindings = null;
-		afterBindings = null;
 	}
 
 	/**
@@ -127,7 +123,8 @@ public class BindingDetector {
 		String insert = "insert into ORACLE values ("
 				+ oracle.getId() + "," + oracle.getCodeFragmentId() + ","
 				+ oracle.getRevision() + "," + "\"" + oracle.getProcess()+ "\","
-				+ "\"" + oracle.getRepositoryRootURL()+ "\"," + "\"" + oracle.getFilePath()+ "\","
+				+ "\"" + oracle.getRepositoryRootURL()+ "\","
+				+ "\"" + App.repository_additional_location+ "\"," + "\"" + oracle.getFilePath()+ "\","
 				+ oracle.getRevisionIdentifier() + "," + oracle.getStart() + "," + oracle.getEnd() +")";
 		return insert;
 	}
@@ -142,8 +139,7 @@ public class BindingDetector {
 		List<Candidate> candidates = new ArrayList<Candidate>();
 		try {
 			while(result_binding.next()){
-				//trunkのみを対象
-				if(result_binding.getString(6).startsWith("trunk") && result_binding.getLong(7) == revision){
+				if(result_binding.getLong(7) == revision){
 					Candidate candidate = getPackageMethod(result_binding.getString(6),
 							result_binding.getLong(7), result_binding.getLong(8), result_binding.getLong(9));
 					candidate.setId(result_binding.getInt(1));
@@ -177,6 +173,7 @@ public class BindingDetector {
 		try {
 			SVNProperties fileProperties = new SVNProperties();
 			OutputStream content = new ByteArrayOutputStream ();
+			if(!App.repository_additional_location.equals("")) filePath = App.repository_additional_location + "/" +filePath;
 			repository.getFile(filePath, revision, fileProperties, content);
 			final ASTParser parser = ASTParser.newParser(AST.JLS8);
 			parser.setKind(ASTParser.K_COMPILATION_UNIT);
@@ -193,7 +190,7 @@ public class BindingDetector {
 				@Override
 				public boolean visit(MethodDeclaration node) {
 					if (node.isConstructor()) return super.visit(node);
-					//変更されたメソッドかどうかを判断
+					//候補のメソッドかどうかを判断
 					int startLine;
 					if(node.getJavadoc() != null) startLine = unit.getLineNumber(node.getJavadoc().getStartPosition());
 					else startLine = unit.getLineNumber(node.getName().getStartPosition());
@@ -255,7 +252,7 @@ public class BindingDetector {
 				filePath = filePath.replace(App.repository_location,"");
 				sources.add(App.tmp_location + "/" + revision + filePath);
 			}
-		}else {
+		} else {
 			checkOutDir.mkdir();
 			for(String filePath : filePaths){
 				filePath = filePath.replace(App.repository_location,"");
@@ -286,7 +283,7 @@ public class BindingDetector {
 	 */
 	private List<String> getFilePath(long revision) {
 		try {
-			SVNURL svnURL = SVNURL.parseURIEncoded(App.repository_location);
+			SVNURL svnURL = SVNURL.parseURIEncoded(App.repository_location + "/" + App.repository_additional_location);
 			ISVNAuthenticationManager authManager = null;
 			List<String> filePaths = new ArrayList<String>();
 			SVNLogClient logClient = new SVNLogClient(authManager, null);
@@ -296,7 +293,7 @@ public class BindingDetector {
 					public void handleDirEntry(SVNDirEntry dirEntry){
 						if (dirEntry.getKind() == SVNNodeKind.FILE){
 							//trunk & .javaのみ
-							if(dirEntry.getURL().toString().startsWith(App.repository_location + "/trunk") && dirEntry.getURL().toString().endsWith(".java"))
+							if(dirEntry.getURL().toString().endsWith(".java"))
 								filePaths.add(dirEntry.getURL().toString());
 						}
 					}
