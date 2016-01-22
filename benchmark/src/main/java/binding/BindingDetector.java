@@ -56,6 +56,9 @@ public class BindingDetector {
 		this.statement_oracle = statement_oracle;
 	}
 
+	public BindingDetector() {
+	}
+
 	public void execute() {
 		List<Candidate> beforeCandidates = getCandidates(before_revision, result_binding_before);
 		List<Candidate> afterCandidates = getCandidates(after_revision, result_binding_after);
@@ -215,7 +218,7 @@ public class BindingDetector {
 	 * @param revision
 	 * @return
 	 */
-	private List<Binding> getBindings(long revision) {
+	public List<Binding> getBindings(long revision) {
 		ASTParser parser = ASTParser.newParser(AST.JLS8);
 		final Map<String, String> options = JavaCore.getOptions();
 		JavaCore.setComplianceOptions(JavaCore.VERSION_1_8, options);
@@ -287,18 +290,20 @@ public class BindingDetector {
 			ISVNAuthenticationManager authManager = null;
 			List<String> filePaths = new ArrayList<String>();
 			SVNLogClient logClient = new SVNLogClient(authManager, null);
-			logClient.doList(svnURL, SVNRevision.create(revision),
-				SVNRevision.create(revision), false, true,
-				new ISVNDirEntryHandler() {
-					public void handleDirEntry(SVNDirEntry dirEntry){
-						if (dirEntry.getKind() == SVNNodeKind.FILE){
-							//trunk & .javaのみ
-							if(dirEntry.getURL().toString().endsWith(".java"))
-								filePaths.add(dirEntry.getURL().toString());
+			try{
+				logClient.doList(svnURL, SVNRevision.create(revision),
+					SVNRevision.create(revision), false, true,
+					new ISVNDirEntryHandler() {
+						public void handleDirEntry(SVNDirEntry dirEntry){
+							if (dirEntry.getKind() == SVNNodeKind.FILE){
+								//javaのみ
+								if(dirEntry.getURL().toString().endsWith(".java"))
+									filePaths.add(dirEntry.getURL().toString());
+							}
 						}
 					}
-				}
-			);
+				);
+			} catch (NullPointerException e) {}
 			return filePaths;
 		} catch (SVNException e) {
 			e.printStackTrace();

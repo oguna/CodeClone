@@ -45,9 +45,9 @@ public class Requestor extends FileASTRequestor {
 					Binding bind = new Binding();
 					if(unit.getPackage() != null){
 						if(nodeClass != null) bind.setInvokeClass(unit.getPackage().getName().toString() + "." + nodeClass.getName().toString());
-						else bind.setInvokeClass(null);
+						else bind.setInvokeClass("");
 						if(nodeMethod != null) bind.setInvokeMethod(nodeMethod.getName().toString());
-						else bind.setInvokeMethod(null);
+						else bind.setInvokeMethod("");
 						bind.setTargetClass(b.getDeclaringClass().getQualifiedName());
 						bind.setTargetMethod(b.getName());
 						binds.add(bind);

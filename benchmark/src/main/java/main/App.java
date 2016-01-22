@@ -15,8 +15,8 @@ import register.RevisionRegister;
  */
 public class App {
 
-	public final static String database_location = "F:/jedit.db";
-	public final static String tmp_location = "F:/tmp/jedit";
+	public final static String database_location = "F:/argouml.db";
+	public final static String tmp_location = "F:/tmp/argouml";
 	public static String repository_location;
 	public static String repository_additional_location;
 	public static int startRevision;
@@ -42,7 +42,7 @@ public class App {
 		RevisionRegister registerRevision = new RevisionRegister();
 		registerRevision.execute();
 		File tmpdir = new File(tmp_location);
-		tmpdir.mkdir();
+		if(!tmpdir.exists()) tmpdir.mkdir();
 		CandidateSqueezer candidateSqueezer = new CandidateSqueezer(repository);
 		candidateSqueezer.execute();
 		//delete(tmpdir);
@@ -50,7 +50,7 @@ public class App {
 		System.out.println((end - start)/1000  + "s");
 	}
 
-	private void delete(File tmp){
+/*	private void delete(File tmp){
 		if (!tmp.exists()) return;
 		if (tmp.isFile()) tmp.delete();
 		else if (tmp.isDirectory()) {
@@ -58,5 +58,5 @@ public class App {
 			for(File file : files) delete(file);
 	        tmp.delete();
 		}
-	}
+	}*/
 }
