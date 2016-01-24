@@ -1,5 +1,7 @@
 package checker;
 
+import static org.eclipse.jdt.internal.compiler.parser.TerminalTokens.*;
+
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -18,12 +20,14 @@ import java.util.List;
 import main.App;
 
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.compiler.InvalidInputException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.internal.compiler.parser.Scanner;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNProperties;
 import org.tmatesoft.svn.core.io.SVNRepository;
@@ -47,33 +51,40 @@ public class Output {
 			connection = DriverManager.getConnection("jdbc:sqlite:" + App.database_location);
 			statement = connection.createStatement();
 			ResultSet result = statement.executeQuery("select * from ORACLE");
+			List<Oracle> oracles = new ArrayList<Oracle>();
 			File datasetsFile = new File(CheckerMain.datasets_location + CheckerMain.repository_name + ".txt");
 			PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(datasetsFile)));
+
 			long id = -1;
 			while(result.next()){
 				Oracle oracle = new Oracle(result.getLong(1), result.getLong(8), result.getString(4), result.getString(7), result.getLong(9), result.getLong(10));
 				SVNProperties fileProperties = new SVNProperties();
 				OutputStream content = new ByteArrayOutputStream ();
+
 				String filePath;
 				if(!App.repository_additional_location.equals("")) filePath = App.repository_additional_location + "/" + oracle.getFilePath();
 				else filePath = oracle.getFilePath();
 				repository.getFile(filePath, oracle.getRevision(), fileProperties, content);
-				File methodInfoFile = new File(CheckerMain.output_location + CheckerMain.repository_name + "/methodInfo/" + oracle.getRevision() + "_" + oracle.getId() + "/" + result.getLong(2) + "_" + oracle.getProcess() + ".txt");
+				oracle = getMethodInfo(oracle, content.toString());
+
+				if(oracle.getProcess().equals("before_fix") || oracle.getProcess().equals("delete")){
+					if(id != result.getLong(1) && id != -1){
+						datasetsOutput(oracles, pw);
+						oracles.clear();
+					}
+					oracles.add(oracle);
+					javaFileOutput(oracle, content.toString());
+				}
+
+				File methodInfoFile = new File(CheckerMain.output_location + CheckerMain.repository_name + "/methodInfo/" + oracle.getId() + "_" + oracle.getRevision() + "/" + result.getLong(2) + "_" + oracle.getProcess() + ".txt");
 			    File methodInfoDir = new File(methodInfoFile.getParent());
 			    if(!methodInfoDir.exists()) methodInfoDir.mkdirs();
 				PrintWriter pw2 = new PrintWriter(new BufferedWriter(new FileWriter(methodInfoFile)));
-				if(oracle.getProcess().equals("before_fix") || oracle.getProcess().equals("delete")){
-					if(id != result.getLong(1) && id != -1) pw.write("\n");
-					else if(id == result.getLong(1)) pw.write("\t");
-					javaFileOutput(oracle, content.toString());
-					datasetsOutput(oracle, pw);
-				}
-				oracle = getMethodInfo(oracle, content.toString());
 				methodInfoOutput(oracle, pw2);
 				pw2.close();
 				id = result.getLong(1);
 			}
-			pw.write("\n");
+			datasetsOutput(oracles, pw);
 			pw.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -109,12 +120,108 @@ public class Output {
 	 * @param oracle
 	 * @param pw
 	 */
-	private void datasetsOutput(Oracle oracle, PrintWriter pw){
-		pw.write(CheckerMain.repository_name + "/" + oracle.getRevision() + "/" + App.repository_additional_location + "/" + oracle.getFilePath());
-		pw.write("\t");
-		pw.write(String.valueOf(oracle.getStart()));
-		pw.write("\t");
-		pw.write(String.valueOf(oracle.getEnd()));
+	private void datasetsOutput(List<Oracle> oracles, PrintWriter pw){
+		for(int i = 0 ; i < oracles.size() ; i++){
+			Oracle oracle1 = oracles.get(i);
+			for(int j = i + 1 ; j < oracles.size() ; j++){
+				Oracle oracle2 = oracles.get(j);
+				int cloneType = identifyCloneType(oracle1, oracle2);
+				pw.write(CheckerMain.repository_name + "/" + oracle1.getRevision() + "/" + App.repository_additional_location + "/" + oracle1.getFilePath());
+				pw.write("\t");
+				pw.write(String.valueOf(oracle1.getStart()));
+				pw.write("\t");
+				pw.write(String.valueOf(oracle1.getEnd()));
+				pw.write("\t");
+				pw.write(CheckerMain.repository_name + "/" + oracle2.getRevision() + "/" + App.repository_additional_location + "/" + oracle2.getFilePath());
+				pw.write("\t");
+				pw.write(String.valueOf(oracle2.getStart()));
+				pw.write("\t");
+				pw.write(String.valueOf(oracle2.getEnd()));
+				pw.write("\t");
+				pw.write(String.valueOf(cloneType));
+				pw.write("\n");
+			}
+		}
+	}
+
+	/**
+	 * クローンTypeの識別
+	 * Type1のコーディングスタイルにおいて，「{，}，;」は無視している
+	 * @param oracle1
+	 * @param oracle2
+	 * @return
+	 */
+	private int identifyCloneType(Oracle oracle1, Oracle oracle2) {
+		oracle1 = nomalizedTokenCreate(oracle1);
+		oracle2 = nomalizedTokenCreate(oracle2);
+		boolean match;
+		match = compareTokens(oracle1.getTokens(),  oracle2.getTokens());
+		if(match) return 1;
+		else {
+			match = compareTokens(oracle1.getNormalizedTokens(),  oracle2.getNormalizedTokens());
+			if(match) return 2;
+			else return 3;
+		}
+	}
+
+	/**
+	 * 正規化したトークンが一致しているかどうか比較
+	 * @param tokens1
+	 * @param tokens2
+	 * @return
+	 */
+	private boolean compareTokens(List<String> tokens1, List<String> tokens2){
+		if(tokens1.size() == tokens2.size()){
+			for(int i = 0 ; i < tokens1.size() ; i++){
+				if(!tokens1.get(i).equals(tokens2.get(i))){
+					return false;
+				}
+			}
+			return true;
+		} else return false;
+	}
+
+	/**
+	 * 対象メソッドの正規化
+	 * @param oracle
+	 * @return
+	 */
+	private Oracle nomalizedTokenCreate(Oracle oracle){
+		List<String> tokens = new ArrayList<String>();
+		List<String> normalizedTokens = new ArrayList<String>();
+
+		Scanner scanner = new Scanner();
+		scanner.setSource(oracle.getSourcecode().toCharArray());
+		scanner.recordLineSeparator = true;
+
+		while(true){
+			int tokenType;
+			try {
+				tokenType = scanner.getNextToken();
+				if (tokenType == TokenNameEOF) break;
+				else if(tokenType == TokenNameNotAToken || tokenType == TokenNameWHITESPACE
+						|| tokenType == TokenNameCOMMENT_LINE || tokenType == TokenNameCOMMENT_BLOCK
+						||tokenType == TokenNameCOMMENT_JAVADOC
+						|| tokenType == TokenNameLBRACE || tokenType == TokenNameRBRACE
+						|| tokenType == TokenNameSEMICOLON) continue;
+				else if(tokenType == TokenNameIdentifier || tokenType == TokenNameIntegerLiteral
+						|| tokenType == TokenNameLongLiteral || tokenType == TokenNameFloatingPointLiteral
+						|| tokenType == TokenNameDoubleLiteral || tokenType == TokenNameCharacterLiteral
+						|| tokenType == TokenNameStringLiteral){
+					tokens.add(scanner.getCurrentTokenString());
+					normalizedTokens.add("$");
+				} else{
+					tokens.add(scanner.getCurrentTokenString());
+					normalizedTokens.add(scanner.getCurrentTokenString());
+				}
+			} catch (InvalidInputException e) {
+				e.printStackTrace();
+			}
+		}
+
+		oracle.setTokens(tokens);
+		oracle.setNormalizedTokens(normalizedTokens);
+		return oracle;
 	}
 
 	/**

@@ -15,6 +15,8 @@ public class Oracle {
 	String targetClass;
 	String targetMethod;
 	List<Binding> binds;
+	List<String> tokens;
+	List<String> normalizedTokens;
 
 	public Oracle(long id, long revision, String process,
 						String filePath, long start, long end) {
@@ -75,5 +77,21 @@ public class Oracle {
 
 	public void setBinds(List<Binding> binds) {
 		this.binds = binds;
+	}
+
+	public List<String> getTokens() {
+		return tokens;
+	}
+
+	public List<String> getNormalizedTokens() {
+		return normalizedTokens;
+	}
+
+	public void setTokens(List<String> tokens) {
+		this.tokens = tokens;
+	}
+
+	public void setNormalizedTokens(List<String> normalizedTokens) {
+		this.normalizedTokens = normalizedTokens;
 	}
 }

@@ -9,7 +9,7 @@ import register.RepositoryRegister;
 
 public class CheckerMain {
 
-	public final static String repository_name = "argouml";
+	public final static String repository_name = "ant";
 	public final static String datasets_location = "F:/Datasets/";
 	public final static String output_location = "F:/Oracle/";
 

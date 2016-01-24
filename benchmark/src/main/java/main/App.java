@@ -15,8 +15,8 @@ import register.RevisionRegister;
  */
 public class App {
 
-	public final static String database_location = "F:/argouml.db";
-	public final static String tmp_location = "F:/tmp/argouml";
+	public final static String database_location = "F:/ant.db";
+	public final static String tmp_location = "F:/tmp/ant";
 	public static String repository_location;
 	public static String repository_additional_location;
 	public static int startRevision;
