@@ -73,7 +73,7 @@ public class Output {
 						oracles.clear();
 					}
 					oracles.add(oracle);
-					javaFileOutput(oracle, content.toString());
+					//javaFileOutput(oracle, content.toString());
 				}
 
 				File methodInfoFile = new File(CheckerMain.output_location + CheckerMain.repository_name + "/methodInfo/" + oracle.getId() + "_" + oracle.getRevision() + "/" + result.getLong(2) + "_" + oracle.getProcess() + ".txt");
@@ -204,13 +204,16 @@ public class Output {
 						||tokenType == TokenNameCOMMENT_JAVADOC
 						|| tokenType == TokenNameLBRACE || tokenType == TokenNameRBRACE
 						|| tokenType == TokenNameSEMICOLON) continue;
-				else if(tokenType == TokenNameIdentifier || tokenType == TokenNameIntegerLiteral
-						|| tokenType == TokenNameLongLiteral || tokenType == TokenNameFloatingPointLiteral
-						|| tokenType == TokenNameDoubleLiteral || tokenType == TokenNameCharacterLiteral
-						|| tokenType == TokenNameStringLiteral){
+				else if(tokenType == TokenNameIdentifier) {
 					tokens.add(scanner.getCurrentTokenString());
 					normalizedTokens.add("$");
-				} else{
+				} else if (tokenType == TokenNameIntegerLiteral
+						|| tokenType == TokenNameLongLiteral || tokenType == TokenNameFloatingPointLiteral
+						|| tokenType == TokenNameDoubleLiteral || tokenType == TokenNameCharacterLiteral
+						|| tokenType == TokenNameStringLiteral) {
+					tokens.add(scanner.getCurrentTokenString());
+					normalizedTokens.add("$0");
+				}else {
 					tokens.add(scanner.getCurrentTokenString());
 					normalizedTokens.add(scanner.getCurrentTokenString());
 				}
@@ -273,7 +276,19 @@ public class Output {
 				if(oracle.getStart() != startLine || oracle.getEnd() != endLine) return super.visit(node);
 				oracle.setSourcecode(node.toString());
 				oracle.setTargetClass(unit.getPackage().getName().toString() + "." + nodeClass.getName().toString());
-				oracle.setTargetMethod(node.getName().toString());
+				String targetMethod = node.getName().toString();
+				List<Object> parameters = node.parameters();
+				if(parameters != null){
+					targetMethod = targetMethod + "(";
+					for(Object parameter : parameters){
+						String[] type = parameter.toString().split(" ", 0);
+						targetMethod = targetMethod + type[0] + " ";
+					}
+					targetMethod = targetMethod + ")";
+				}
+				oracle.setTargetMethod(targetMethod);
+				oracle.setStart(unit.getLineNumber(node.getName().getStartPosition()));
+				oracle.setEnd(unit.getLineNumber(node.getStartPosition() + node.getLength()));
 				return super.visit(node);
 			}
 		});

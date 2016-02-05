@@ -1,5 +1,6 @@
 package binding;
 
+
 /**
  * @author y-yusuke
  *
@@ -16,6 +17,7 @@ public class Candidate {
 	long end;
 	String targetClass;
 	String targetMethod;
+	String sourceCode;
 
 	public Candidate(){
 	}
@@ -84,5 +86,11 @@ public class Candidate {
 	}
 	public void setTargetMethod(String targetMethod) {
 		this.targetMethod = targetMethod;
+	}
+	public String getSourceCode() {
+		return sourceCode;
+	}
+	public void setSourceCode(String sourceCode) {
+		this.sourceCode = sourceCode;
 	}
 }

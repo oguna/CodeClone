@@ -10,8 +10,8 @@ import register.RepositoryRegister;
 public class CheckerMain {
 
 	public final static String repository_name = "ant";
-	public final static String datasets_location = "F:/Datasets/";
-	public final static String output_location = "F:/Oracle/";
+	public final static String datasets_location = "F:/Datasets++/";
+	public final static String output_location = "F:/Oracle++/";
 
 	public static void main(String[] args) throws SVNException {
 		RepositoryRegister registerRepository = new RepositoryRegister();

@@ -1,5 +1,7 @@
 package binding;
 
+import static org.eclipse.jdt.internal.compiler.parser.TerminalTokens.*;
+
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -18,12 +20,14 @@ import main.App;
 
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.compiler.InvalidInputException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.internal.compiler.parser.Scanner;
 import org.tmatesoft.svn.core.ISVNDirEntryHandler;
 import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNException;
@@ -45,6 +49,10 @@ public class BindingDetector {
 	ResultSet result_binding_before;
 	ResultSet result_binding_after;
 	Statement statement_oracle;
+	List<Candidate> beforeCandidates = new ArrayList<Candidate>();
+	List<Candidate> deleteCandidates = new ArrayList<Candidate>();
+	List<Candidate> afterCandidates = new ArrayList<Candidate>();
+	List<Candidate> addCandidates = new ArrayList<Candidate>();
 
 	public BindingDetector(SVNRepository repository, long before_revision, long after_revision,
 			ResultSet result_binding_before, ResultSet result_binding_after, Statement statement_oracle) {
@@ -60,35 +68,54 @@ public class BindingDetector {
 	}
 
 	public void execute() {
-		List<Candidate> beforeCandidates = getCandidates(before_revision, result_binding_before);
-		List<Candidate> afterCandidates = getCandidates(after_revision, result_binding_after);
+		getCandidates(before_revision, result_binding_before);
+		getCandidates(after_revision, result_binding_after);
 		List<Binding> beforeBindings = getBindings(before_revision);
 		List<Binding> afterBindings = getBindings(after_revision);
 
-		for(Candidate afterCandidate : afterCandidates){
-			List<Candidate> oracles = new ArrayList<Candidate>();
-			//after_fixとaddメソッドの呼び出し箇所を把握
-			List<Binding> afterInvokers = new ArrayList<Binding>();
+		List<Candidate> oracles = new ArrayList<Candidate>();
+		List<Candidate> tmpOracles = new ArrayList<Candidate>();
+		List<Candidate> oracles1 = integratePattern1(beforeBindings, afterBindings);
+		List<Candidate> oracles2 = integratePattern2(beforeBindings, afterBindings);
+
+		for(Candidate oracle : oracles1) tmpOracles.add(oracle);
+		for(Candidate oracle : oracles2) tmpOracles.add(oracle);
+
+		oracles = garbageRemove(tmpOracles);
+		dbCreate(oracles);
+	}
+	/**
+	 * 集約パターン1の呼び出し関係
+	 * @param beforeBindings
+	 * @param afterBindings
+	 * @return
+	 */
+	private List<Candidate> integratePattern1(List<Binding> beforeBindings, List<Binding> afterBindings) {
+		List<Candidate> oracles = new ArrayList<Candidate>();
+		for(Candidate addCandidate : addCandidates){
+			List<Candidate> tmpOracles = new ArrayList<Candidate>();
+			//addメソッドの呼び出し箇所を把握
+			List<Binding> addInvokers = new ArrayList<Binding>();
 			for(Binding afterBinding : afterBindings){
-				if(afterBinding.getTargetClass().equals(afterCandidate.getTargetClass())
-					&& afterBinding.getTargetMethod().equals(afterCandidate.getTargetMethod()))
-					afterInvokers.add(afterBinding);
+				if(afterBinding.getTargetClass().equals(addCandidate.getTargetClass())
+					&& afterBinding.getTargetMethod().equals(addCandidate.getTargetMethod()))
+					addInvokers.add(afterBinding);
 			}
-			//before_fixとdeleteメソッドの呼び出し箇所を把握
-			for(Candidate beforeCandidate : beforeCandidates){
-				if(beforeCandidate.getId() == afterCandidate.getId()){
-					List<Binding> beforeInvokers = new ArrayList<Binding>();
+			//deleteメソッドの呼び出し箇所を把握
+			for(Candidate deleteCandidate : deleteCandidates){
+				if(deleteCandidate.getId() == addCandidate.getId()){
+					List<Binding> deleteInvokers = new ArrayList<Binding>();
 					for(Binding beforeBinding : beforeBindings){
-						if(beforeBinding.getTargetClass().equals(beforeCandidate.getTargetClass())
-							&& beforeBinding.getTargetMethod().equals(beforeCandidate.getTargetMethod()))
-							beforeInvokers.add(beforeBinding);
+						if(beforeBinding.getTargetClass().equals(deleteCandidate.getTargetClass())
+							&& beforeBinding.getTargetMethod().equals(deleteCandidate.getTargetMethod()))
+							deleteInvokers.add(beforeBinding);
 					}
 					boolean flag = false;
-					for(Binding beforeInvoker : beforeInvokers){
-						for(Binding afterInvoker : afterInvokers){
-							if(beforeInvoker.getInvokeClass().equals(afterInvoker.getInvokeClass())
-								&& beforeInvoker.getInvokeMethod().equals(afterInvoker.getInvokeMethod())){
-									oracles.add(beforeCandidate);
+					for(Binding deleteInvoker : deleteInvokers){
+						for(Binding addInvoker : addInvokers){
+							if(deleteInvoker.getInvokeClass().equals(addInvoker.getInvokeClass())
+								&& deleteInvoker.getInvokeMethod().equals(addInvoker.getInvokeMethod())){
+									tmpOracles.add(deleteCandidate);
 									flag = true;
 									break;
 							}
@@ -97,12 +124,312 @@ public class BindingDetector {
 					}
 				}
 			}
-			if(oracles.size() > 1){
-				oracles.add(afterCandidate);
-				dbCreate(oracles);
+			if(tmpOracles.size() > 1){
+				tmpOracles.add(addCandidate);
+				for(Candidate tmpOracle : tmpOracles) oracles.add(tmpOracle);
 			}
-			oracles.clear();
+			tmpOracles.clear();
 		}
+		return oracles;
+	}
+
+	/**
+	 * 集約パターン2の呼び出し関係
+	 * @param beforeBindings
+	 * @param afterBindings
+	 * @return
+	 */
+	private List<Candidate> integratePattern2(List<Binding> beforeBindings, List<Binding> afterBindings) {
+		List<Candidate> oracles = new ArrayList<Candidate>();
+		for(Candidate afterCandidate : afterCandidates){
+			List<Candidate> tmpOracles = new ArrayList<Candidate>();
+			boolean flag;
+
+			//after_fixメソッドの呼び出し箇所を把握
+			List<Binding> afterInvokers = new ArrayList<Binding>();
+			for(Binding afterBinding : afterBindings){
+				if(afterBinding.getTargetClass().equals(afterCandidate.getTargetClass())
+					&& afterBinding.getTargetMethod().equals(afterCandidate.getTargetMethod()))
+					afterInvokers.add(afterBinding);
+			}
+
+			//before_fixメソッドの呼び出し箇所を把握
+			List<Binding> beforeInvokers = new ArrayList<Binding>();
+			for(Candidate beforeCandidate : beforeCandidates){
+				if(beforeCandidate.getId() == afterCandidate.getId()){
+					for(Binding beforeBinding : beforeBindings){
+						if(beforeBinding.getTargetClass().equals(beforeCandidate.getTargetClass())
+							&& beforeBinding.getTargetMethod().equals(beforeCandidate.getTargetMethod()))
+							beforeInvokers.add(beforeBinding);
+					}
+					tmpOracles.add(beforeCandidate);
+					break;
+				}
+			}
+
+			//after_fixメソッドとbefore_fixメソッドで共通する呼び出し箇所を削除
+			flag = false;
+			for(Binding beforeInvoker : beforeInvokers){
+				for(int i = afterInvokers.size() - 1 ; i >= 0 ; i --){
+					Binding afterInvoker = afterInvokers.get(i);
+					if(beforeInvoker.getInvokeClass().equals(afterInvoker.getInvokeClass())
+							&& beforeInvoker.getInvokeMethod().equals(afterInvoker.getInvokeMethod())){
+						afterInvokers.remove(i);
+						flag = true;
+						break;
+					}
+				}
+			}
+
+			//if(!flag) continue;
+
+			//deleteメソッドの呼び出し箇所を把握
+			for(Candidate deleteCandidate : deleteCandidates){
+				if(deleteCandidate.getId() == afterCandidate.getId()){
+					List<Binding> deleteInvokers = new ArrayList<Binding>();
+					for(Binding beforeBinding : beforeBindings){
+						if(beforeBinding.getTargetClass().equals(deleteCandidate.getTargetClass())
+							&& beforeBinding.getTargetMethod().equals(deleteCandidate.getTargetMethod()))
+							deleteInvokers.add(beforeBinding);
+					}
+					flag = false;
+					if(afterInvokers.size() != 0){
+						for(Binding deleteInvoker : deleteInvokers){
+							for(Binding afterInvoker : afterInvokers){
+								if(deleteInvoker.getInvokeClass().equals(afterInvoker.getInvokeClass())
+									&& deleteInvoker.getInvokeMethod().equals(afterInvoker.getInvokeMethod())){
+										tmpOracles.add(deleteCandidate);
+										flag = true;
+										break;
+								}
+							}
+							if(flag) break;
+						}
+					}else if(deleteInvokers.size() == 0) tmpOracles.add(deleteCandidate);
+				}
+			}
+			if(tmpOracles.size() > 1){
+				tmpOracles.add(afterCandidate);
+				for(Candidate tmpOracle : tmpOracles) oracles.add(tmpOracle);
+			}
+			tmpOracles.clear();
+		}
+		return oracles;
+	}
+
+	/**
+	 * 削除されたメソッドのゴミを除去
+	 * @param tmpOracles
+	 * @return
+	 */
+	private List<Candidate> garbageRemove(List<Candidate> tmpOracles) {
+		List<Candidate> deleteOracles = new ArrayList<Candidate>();
+		List<Candidate> afterOracles = new ArrayList<Candidate>();
+		List<Candidate> addOracles = new ArrayList<Candidate>();
+
+		for(Candidate tmpOracle : tmpOracles) {
+			if(tmpOracle.getProcess().equals("delete")) deleteOracles.add(tmpOracle);
+			else if(tmpOracle.getProcess().equals("after_fix")) afterOracles.add(tmpOracle);
+			else if(tmpOracle.getProcess().equals("add")) addOracles.add(tmpOracle);
+		}
+
+		//重複したdeleteメソッドの除去
+		List<Integer> removeIndex = new ArrayList<Integer>();
+		for(int i = 0 ; i < deleteOracles.size() - 1 ; i++){
+			boolean flag = false;
+			for(int remove : removeIndex) if(i == remove) flag = true;
+			if(flag) continue;
+			Candidate deleteOracle = deleteOracles.get(i);
+			long codeFragmentId = deleteOracle.getCodeFragmentId();
+			List<Candidate> duplicates = new ArrayList<Candidate>();
+			for(int j = i + 1 ; j < deleteOracles.size() ; j++){
+				flag = false;
+				for(int remove : removeIndex) if(j == remove) flag = true;
+				if(flag) continue;
+				if(codeFragmentId == deleteOracles.get(j).getCodeFragmentId()){
+					duplicates.add(deleteOracles.get(j));
+					removeIndex.add(j);
+				}
+			}
+			if(duplicates.size() == 0) continue;
+
+			//類似度が最も高いdeleteメソッドの検出
+			duplicates.add(deleteOracle);
+			double max = 0;
+			double similariy = 0;
+			long id = -1;
+			for(Candidate duplicate : duplicates){
+				for(Candidate afterOracle : afterOracles){
+					if(duplicate.getId() == afterOracle.getId()){
+						similariy = caluclateSimilarity(duplicate, afterOracle);
+						break;
+					}
+				}
+				if(similariy == 0){
+					for(Candidate addOracle : addOracles){
+						if(duplicate.getId() == addOracle.getId()){
+							similariy = caluclateSimilarity(duplicate, addOracle);
+							break;
+						}
+					}
+				}
+				if(max < similariy){
+					max = similariy;
+					id = duplicate.getId();
+				}
+			}
+
+			//ゴミdeleteメソッドを削除
+			for(int j = tmpOracles.size() -1  ; j >= 0 ; j--){
+				if(codeFragmentId == tmpOracles.get(j).getCodeFragmentId()
+						&& id != tmpOracles.get(j).getId()) tmpOracles.remove(j);
+			}
+		}
+		//ゴミafter_fix，before_fixメソッドを削除
+		for(int i = 0 ; i < afterOracles.size() ; i++){
+			long id = afterOracles.get(i).getId();
+			int count = 0;
+			for(Candidate tmpOracle : tmpOracles){
+				if(id == tmpOracle.getId()) count++;
+			}
+			if(count == 2){
+				for(int j = tmpOracles.size() - 1 ; j >= 0 ; j--){
+					if(id == tmpOracles.get(j).getId() && tmpOracles.get(j).getProcess().equals("before_fix"))
+						tmpOracles.remove(j);
+					else if(id == tmpOracles.get(j).getId() && tmpOracles.get(j).getProcess().equals("after_fix"))
+						tmpOracles.remove(j);
+				}
+			}
+		}
+		//ゴミadd，deleteメソッドを削除
+		for(int i = 0 ; i < addOracles.size() ; i++){
+			long id = addOracles.get(i).getId();
+			int count = 0;
+			for(Candidate tmpOracle : tmpOracles){
+				if(id == tmpOracle.getId()) count++;
+			}
+			if(count <= 2){
+				for(int j = tmpOracles.size() - 1  ; j >= 0 ; j--){
+					if(id == tmpOracles.get(j).getId() && tmpOracles.get(j).getProcess().equals("delete"))
+						tmpOracles.remove(j);
+					else	if(id == tmpOracles.get(j).getId() && tmpOracles.get(j).getProcess().equals("add"))
+						tmpOracles.remove(j);
+				}
+			}
+		}
+		return tmpOracles;
+	}
+
+	/**
+	 * メソッドの類似度算出
+	 * 正規化なし
+	 * @param duplicate
+	 * @param afterOracle
+	 * @return
+	 */
+	private double caluclateSimilarity(Candidate duplicate, Candidate afterOracle) {
+		String sourceCode1 = getSourceCode(duplicate);
+		List<String> tokens1 = ngramTokenCreate(duplicate, sourceCode1);
+		String sourceCode2 = getSourceCode(afterOracle);
+		List<String> tokens2 = ngramTokenCreate(duplicate, sourceCode2);
+		List<Integer> count = new ArrayList<Integer>();
+		for (int i = 0; i < tokens1.size(); i++) {
+			for (int j = 0; j < tokens2.size(); j++) {
+				if (tokens1.get(i).equals(tokens2.get(j))) {
+					if (count.contains(j))
+						continue;
+					else {
+						count.add(j);
+						break;
+					}
+				}
+			}
+		}
+		return (double) count.size() / (double) tokens1.size();
+	}
+
+	/**
+	 * 対象メソッドのソースコード取得
+	 * @param candidate
+	 * @return
+	 */
+	private String getSourceCode(Candidate candidate) {
+		SVNProperties fileProperties = new SVNProperties();
+		OutputStream content = new ByteArrayOutputStream ();
+		try {
+			String filePath;
+			if(!App.repository_additional_location.equals("")) filePath = App.repository_additional_location + "/" + candidate.getFilePath();
+			else filePath = candidate.getFilePath();
+			repository.getFile(filePath, candidate.getRevisionIdentifier(), fileProperties, content);
+		} catch (SVNException e) {
+			e.printStackTrace();
+		}
+
+		final ASTParser parser = ASTParser.newParser(AST.JLS8);
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setSource(content.toString().toCharArray());
+		final CompilationUnit unit = (CompilationUnit) parser.createAST(new NullProgressMonitor());
+
+		unit.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(MethodDeclaration node) {
+				if (node.isConstructor()) return super.visit(node);
+				//候補のメソッドかどうかを判断
+				int startLine;
+				if(node.getJavadoc() != null) startLine = unit.getLineNumber(node.getJavadoc().getStartPosition());
+				else startLine = unit.getLineNumber(node.getName().getStartPosition());
+				int endLine = unit.getLineNumber(node.getStartPosition()+ node.getLength());
+				if(candidate.getStart() != startLine || candidate.getEnd() != endLine) return super.visit(node);
+				candidate.setSourceCode(node.toString());
+				return super.visit(node);
+			}
+		});
+		return candidate.getSourceCode();
+	}
+
+	/**
+	 * 対象メソッドをn-gram単位に切り分け
+	 * @param oracle
+	 * @return
+	 */
+	private List<String> ngramTokenCreate(Candidate candidate, String source){
+		List<String> tokens = new ArrayList<String>();
+
+		Scanner scanner = new Scanner();
+		scanner.setSource(source.toCharArray());
+		scanner.recordLineSeparator = true;
+
+		while(true){
+			int tokenType;
+			try {
+				tokenType = scanner.getNextToken();
+				if (tokenType == TokenNameEOF) break;
+				else if(tokenType == TokenNameNotAToken || tokenType == TokenNameWHITESPACE
+						|| tokenType == TokenNameCOMMENT_LINE || tokenType == TokenNameCOMMENT_BLOCK
+						||tokenType == TokenNameCOMMENT_JAVADOC
+						|| tokenType == TokenNameLBRACE || tokenType == TokenNameRBRACE
+						|| tokenType == TokenNameSEMICOLON) continue;
+				else if(tokenType == TokenNameIdentifier) {
+					tokens.add(scanner.getCurrentTokenString());
+				} else if (tokenType == TokenNameIntegerLiteral
+						|| tokenType == TokenNameLongLiteral || tokenType == TokenNameFloatingPointLiteral
+						|| tokenType == TokenNameDoubleLiteral || tokenType == TokenNameCharacterLiteral
+						|| tokenType == TokenNameStringLiteral) {
+					tokens.add(scanner.getCurrentTokenString());
+				}else {
+					tokens.add(scanner.getCurrentTokenString());
+				}
+			} catch (InvalidInputException e) {
+				e.printStackTrace();
+			}
+		}
+		List<String> ngramTokens = new ArrayList<String>();
+		for (int i = 0; i < tokens.size() - 2; i++) {
+			String tmp = tokens.get(i) + tokens.get(i + 1)
+					+ tokens.get(i + 2);
+			ngramTokens.add(tmp);
+		}
+		return ngramTokens;
 	}
 
 	/**
@@ -138,8 +465,7 @@ public class BindingDetector {
 	 * @return
 	 * @throws SQLException
 	 */
-	private List<Candidate> getCandidates(long revision, ResultSet result_binding) {
-		List<Candidate> candidates = new ArrayList<Candidate>();
+	private void getCandidates(long revision, ResultSet result_binding) {
 		try {
 			while(result_binding.next()){
 				if(result_binding.getLong(7) == revision){
@@ -154,13 +480,15 @@ public class BindingDetector {
 					candidate.setRevisionIdentifier(result_binding.getLong(7));
 					candidate.setStart(result_binding.getLong(8));
 					candidate.setEnd(result_binding.getLong(9));
-					candidates.add(candidate);
+					if(candidate.getProcess().equals("before_fix")) beforeCandidates.add(candidate);
+					else if(candidate.getProcess().equals("delete")) deleteCandidates.add(candidate);
+					else if(candidate.getProcess().equals("after_fix")) afterCandidates.add(candidate);
+					else if(candidate.getProcess().equals("add")) addCandidates.add(candidate);
 				}
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		return candidates;
 	}
 
 	/**
@@ -201,7 +529,17 @@ public class BindingDetector {
 					if(start != startLine || end != endLine) return super.visit(node);
 
 					candidate.setTargetClass(unit.getPackage().getName().toString() + "." + nodeClass.getName().toString());
-					candidate.setTargetMethod(node.getName().toString());
+					String targetMethod = node.getName().toString();
+					List<Object> parameters = node.parameters();
+					if(parameters != null){
+						targetMethod = targetMethod + "(";
+						for(Object parameter : parameters){
+							String[] type = parameter.toString().split(" ", 0);
+							targetMethod = targetMethod + type[0] + " ";
+						}
+						targetMethod = targetMethod + ")";
+					}
+					candidate.setTargetMethod(targetMethod);
 					return super.visit(node);
 				}
 			});

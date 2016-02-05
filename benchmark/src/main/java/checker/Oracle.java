@@ -47,6 +47,13 @@ public class Oracle {
 		return end;
 	}
 
+	public void setStart(long start) {
+		this.start = start;
+	}
+	public void setEnd(long end) {
+		this.end = end;
+	}
+
 	public String getSourcecode() {
 		return sourcecode;
 	}
