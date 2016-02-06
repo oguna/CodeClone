@@ -282,7 +282,25 @@ public class Output {
 					targetMethod = targetMethod + "(";
 					for(Object parameter : parameters){
 						String[] type = parameter.toString().split(" ", 0);
-						targetMethod = targetMethod + type[0] + " ";
+						for(int i = 0 ; i < type.length ; i++) {
+							//修飾子を除去
+							if(type[i].equals("final") || type[i].equals("static")
+									|| type[i].equals("transient") || type[i].equals("volatile")) continue;
+							else {
+								//型名のみを取得
+								if(type[i].indexOf(".") != -1){
+									String[] type2 = type[i].split("\\.", 0);
+									//型パラメータの除去
+									String[] typeParameter = type2[type2.length - 1].split("<");
+									targetMethod = targetMethod + typeParameter[0] + " ";
+								}else {
+									//型パラメータの除去
+									String[] typeParameter = type[i].split("<");
+									targetMethod = targetMethod + typeParameter[0] + " ";
+								}
+								break;
+							}
+						}
 					}
 					targetMethod = targetMethod + ")";
 				}

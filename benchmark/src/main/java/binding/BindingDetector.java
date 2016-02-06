@@ -101,6 +101,8 @@ public class BindingDetector {
 					&& afterBinding.getTargetMethod().equals(addCandidate.getTargetMethod()))
 					addInvokers.add(afterBinding);
 			}
+
+			if(addInvokers.size() == 0) continue;
 			//deleteメソッドの呼び出し箇所を把握
 			for(Candidate deleteCandidate : deleteCandidates){
 				if(deleteCandidate.getId() == addCandidate.getId()){
@@ -143,7 +145,6 @@ public class BindingDetector {
 		List<Candidate> oracles = new ArrayList<Candidate>();
 		for(Candidate afterCandidate : afterCandidates){
 			List<Candidate> tmpOracles = new ArrayList<Candidate>();
-			boolean flag;
 
 			//after_fixメソッドの呼び出し箇所を把握
 			List<Binding> afterInvokers = new ArrayList<Binding>();
@@ -168,20 +169,18 @@ public class BindingDetector {
 			}
 
 			//after_fixメソッドとbefore_fixメソッドで共通する呼び出し箇所を削除
-			flag = false;
 			for(Binding beforeInvoker : beforeInvokers){
-				for(int i = afterInvokers.size() - 1 ; i >= 0 ; i --){
+				for(int i = 0 ; i < afterInvokers.size() ; i ++){
 					Binding afterInvoker = afterInvokers.get(i);
 					if(beforeInvoker.getInvokeClass().equals(afterInvoker.getInvokeClass())
 							&& beforeInvoker.getInvokeMethod().equals(afterInvoker.getInvokeMethod())){
 						afterInvokers.remove(i);
-						flag = true;
 						break;
 					}
 				}
 			}
 
-			//if(!flag) continue;
+			if(afterInvokers.size() == 0) continue;
 
 			//deleteメソッドの呼び出し箇所を把握
 			for(Candidate deleteCandidate : deleteCandidates){
@@ -192,20 +191,18 @@ public class BindingDetector {
 							&& beforeBinding.getTargetMethod().equals(deleteCandidate.getTargetMethod()))
 							deleteInvokers.add(beforeBinding);
 					}
-					flag = false;
-					if(afterInvokers.size() != 0){
-						for(Binding deleteInvoker : deleteInvokers){
-							for(Binding afterInvoker : afterInvokers){
-								if(deleteInvoker.getInvokeClass().equals(afterInvoker.getInvokeClass())
-									&& deleteInvoker.getInvokeMethod().equals(afterInvoker.getInvokeMethod())){
-										tmpOracles.add(deleteCandidate);
-										flag = true;
-										break;
-								}
+					boolean flag = false;
+					for(Binding deleteInvoker : deleteInvokers){
+						for(Binding afterInvoker : afterInvokers){
+							if(deleteInvoker.getInvokeClass().equals(afterInvoker.getInvokeClass())
+								&& deleteInvoker.getInvokeMethod().equals(afterInvoker.getInvokeMethod())){
+									tmpOracles.add(deleteCandidate);
+									flag = true;
+									break;
 							}
-							if(flag) break;
 						}
-					}else if(deleteInvokers.size() == 0) tmpOracles.add(deleteCandidate);
+						if(flag) break;
+					}
 				}
 			}
 			if(tmpOracles.size() > 1){
@@ -255,13 +252,16 @@ public class BindingDetector {
 
 			//類似度が最も高いdeleteメソッドの検出
 			duplicates.add(deleteOracle);
-			double max = 0;
+			double maxSimilariy = 0;
+			double maxCharSimilariy = 0;
 			double similariy = 0;
+			double charSimilarity = 0;
 			long id = -1;
 			for(Candidate duplicate : duplicates){
 				for(Candidate afterOracle : afterOracles){
 					if(duplicate.getId() == afterOracle.getId()){
 						similariy = caluclateSimilarity(duplicate, afterOracle);
+						charSimilarity = caluclateCharSimilarity(duplicate, afterOracle);
 						break;
 					}
 				}
@@ -269,13 +269,20 @@ public class BindingDetector {
 					for(Candidate addOracle : addOracles){
 						if(duplicate.getId() == addOracle.getId()){
 							similariy = caluclateSimilarity(duplicate, addOracle);
+							charSimilarity = caluclateCharSimilarity(duplicate, addOracle);
 							break;
 						}
 					}
 				}
-				if(max < similariy){
-					max = similariy;
+				if(maxSimilariy < similariy){
+					maxSimilariy = similariy;
+					maxCharSimilariy = charSimilarity;
 					id = duplicate.getId();
+				}else if(maxSimilariy == similariy) {
+					if(maxCharSimilariy < charSimilarity) {
+						maxCharSimilariy = charSimilarity;
+						id = duplicate.getId();
+					}
 				}
 			}
 
@@ -329,9 +336,9 @@ public class BindingDetector {
 	 */
 	private double caluclateSimilarity(Candidate duplicate, Candidate afterOracle) {
 		String sourceCode1 = getSourceCode(duplicate);
-		List<String> tokens1 = ngramTokenCreate(duplicate, sourceCode1);
+		List<String> tokens1 = ngramTokenCreate(sourceCode1);
 		String sourceCode2 = getSourceCode(afterOracle);
-		List<String> tokens2 = ngramTokenCreate(duplicate, sourceCode2);
+		List<String> tokens2 = ngramTokenCreate(sourceCode2);
 		List<Integer> count = new ArrayList<Integer>();
 		for (int i = 0; i < tokens1.size(); i++) {
 			for (int j = 0; j < tokens2.size(); j++) {
@@ -389,10 +396,11 @@ public class BindingDetector {
 
 	/**
 	 * 対象メソッドをn-gram単位に切り分け
-	 * @param oracle
+	 * @param candidate
+	 * @param source
 	 * @return
 	 */
-	private List<String> ngramTokenCreate(Candidate candidate, String source){
+	private List<String> ngramTokenCreate(String source){
 		List<String> tokens = new ArrayList<String>();
 
 		Scanner scanner = new Scanner();
@@ -430,6 +438,50 @@ public class BindingDetector {
 			ngramTokens.add(tmp);
 		}
 		return ngramTokens;
+	}
+
+	/**
+	 * 対象メソッド(一文字ずつ)の類似度算出
+	 * 正規化なし
+	 * @param duplicate
+	 * @param afterOracle
+	 * @return
+	 */
+	private double caluclateCharSimilarity(Candidate duplicate, Candidate afterOracle) {
+		List<String> tokens1 = ngramCharCreate(duplicate);
+		List<String> tokens2 = ngramCharCreate(afterOracle);
+		List<Integer> count = new ArrayList<Integer>();
+		for (int i = 0; i < tokens1.size(); i++) {
+			for (int j = 0; j < tokens2.size(); j++) {
+				if (tokens1.get(i).equals(tokens2.get(j))) {
+					if (count.contains(j))
+						continue;
+					else {
+						count.add(j);
+						break;
+					}
+				}
+			}
+		}
+		return (double) count.size() / (double) tokens1.size();
+	}
+
+
+	/**
+	 * 対象メソッド(一文字ずつ)をn-gramに切り分け
+	 * @param candidate
+	 * @return
+	 */
+	private List<String> ngramCharCreate(Candidate candidate){
+		List<String> ngramChars = new ArrayList<String>();
+		String[] chars = candidate.getSourceCode().split(" ");
+
+		for (int i = 0; i < chars.length - 4; i++) {
+			String tmp = chars[i] + chars[i + 1]
+					+ chars[i + 2] + chars[i + 3] + chars[i + 4];
+			ngramChars.add(tmp);
+		}
+		return ngramChars;
 	}
 
 	/**
@@ -535,7 +587,25 @@ public class BindingDetector {
 						targetMethod = targetMethod + "(";
 						for(Object parameter : parameters){
 							String[] type = parameter.toString().split(" ", 0);
-							targetMethod = targetMethod + type[0] + " ";
+							for(int i = 0 ; i < type.length ; i++) {
+								//修飾子を除去
+								if(type[i].equals("final") || type[i].equals("static")
+										|| type[i].equals("transient") || type[i].equals("volatile")) continue;
+								else {
+									//型名のみを取得
+									if(type[i].indexOf(".") != -1){
+										String[] type2 = type[i].split("\\.", 0);
+										//型パラメータの除去
+										String[] typeParameter = type2[type2.length - 1].split("<");
+										targetMethod = targetMethod + typeParameter[0] + " ";
+									}else {
+										//型パラメータの除去
+										String[] typeParameter = type[i].split("<");
+										targetMethod = targetMethod + typeParameter[0] + " ";
+									}
+									break;
+								}
+							}
 						}
 						targetMethod = targetMethod + ")";
 					}

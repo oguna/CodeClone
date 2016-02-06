@@ -55,7 +55,25 @@ public class Requestor extends FileASTRequestor {
 								invokeMethod = invokeMethod + "(";
 								for(Object parameter : parameters){
 									String[] type = parameter.toString().split(" ", 0);
-									invokeMethod = invokeMethod + type[0] + " ";
+									for(int i = 0 ; i < type.length ; i++) {
+										//修飾子を除去
+										if(type[i].equals("final") || type[i].equals("static")
+												|| type[i].equals("transient") || type[i].equals("volatile")) continue;
+										else {
+											//型名のみを取得
+											if(type[i].indexOf(".") != -1){
+												String[] type2 = type[i].split("\\.", 0);
+												//型パラメータの除去
+												String[] typeParameter = type2[type2.length - 1].split("<");
+												invokeMethod = invokeMethod + typeParameter[0] + " ";
+											}else {
+												//型パラメータの除去
+												String[] typeParameter = type[i].split("<");
+												invokeMethod = invokeMethod + typeParameter[0] + " ";
+											}
+											break;
+										}
+									}
 								}
 								invokeMethod = invokeMethod + ")";
 							}
@@ -63,13 +81,18 @@ public class Requestor extends FileASTRequestor {
 						}
 						else bind.setInvokeMethod("");
 
-						bind.setTargetClass(b.getDeclaringClass().getQualifiedName());
+						//型パラメータの除去
+						String[] classTypePrameter = b.getDeclaringClass().getQualifiedName().split("<");
+						bind.setTargetClass(classTypePrameter[0]);
 						String targetMethod = b.getName();
 						ITypeBinding[] targetParameters = b.getParameterTypes();
 						if (targetParameters != null) {
 							targetMethod = targetMethod + "(";
-							  for (int i = 0; i < targetParameters.length; i++)
-								  targetMethod = targetMethod + targetParameters[i].getName() + " ";
+							  for (int i = 0; i < targetParameters.length; i++) {
+								//型パラメータの除去
+								  String[] typeParameter  = targetParameters[i].getName().split("<");
+								  targetMethod = targetMethod + typeParameter[0] + " ";
+							  }
 							  targetMethod = targetMethod + ")";
 						}
 						bind.setTargetMethod(targetMethod);

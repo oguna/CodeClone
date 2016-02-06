@@ -77,7 +77,7 @@ public class CandidateSqueezer {
 													+ "REPOSITORY_ROOT_URL string, REPOSITORY_ADDITIONAL_URL string, FILE_PATH string, REVISION_IDENTIFIER integer, "
 													+ "START_LINE integer, END_LINE integer)");
 
-			for(int current_revision_num = App.startRevision ; current_revision_num <= App.endRevision ; current_revision_num++){
+			for(int current_revision_num = App.startRevision ; current_revision_num < App.endRevision ; current_revision_num++){
 				System.out.println(App.df.format(new Date(System.currentTimeMillis())).toString() +" revision " + current_revision_num + " mining start.");
 				//削除・追加されたメソッド，修正前・修正後のメソッドを特定
 				Query query = new Query();
